@@ -114,6 +114,9 @@ void initImageIo(bool lightVersion) {
   TLevelReader::define("mesh", TLevelReaderMesh::create);
   TFileType::declare("mesh", TFileType::MESH_IMAGE);
 
+  TFileType::declare("glb", TFileType::GLTF_LEVEL);
+  TFileType::declare("gltf", TFileType::GLTF_LEVEL);
+
   TFileType::declare("tpl", TFileType::PALETTE_LEVEL);
 
   Tiio::defineReaderMaker("png", Tiio::makePngReader);

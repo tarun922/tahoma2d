@@ -29,7 +29,8 @@ enum TXshLevelType {
   SND_TXT_XSHLEVEL  = 4 << 7,
   MESH_XSHLEVEL     = 5 << 7,
   FOLDER_XSHLEVEL   = 6 << 7,
-  PEGBAR_XSHLEVEL   = 7 << 7
+  PEGBAR_XSHLEVEL   = 7 << 7,
+  REF3D_XSHLEVEL    = (8 << 7) | LEVELCOLUMN_XSHLEVEL  // glTF/GLB pose reference
 };
 
 #endif

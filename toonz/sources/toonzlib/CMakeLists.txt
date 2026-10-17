@@ -168,6 +168,7 @@ set(HEADERS
     ../include/toonz/filepathproperties.h
     ../include/toonz/navigationtags.h
     ../include/toonz/txshfoldercolumn.h
+    ../include/toonz/ref3dmodel.h
 )
 
 set(SOURCES
@@ -212,6 +213,7 @@ set(SOURCES
     outputproperties.cpp
     preferences.cpp
     rasterbrush.cpp
+    ref3dmodel.cpp
     rasterstrokegenerator.cpp
     scenefx.cpp
     sceneproperties.cpp
@@ -370,6 +372,7 @@ include_directories(
 )
 include_directories(
     ../toonzfarm/include
+    ${CMAKE_SOURCE_DIR}/../../thirdparty/tinygltf
 )
 
 if(BUILD_ENV_MSVC)
