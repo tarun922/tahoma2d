@@ -1032,6 +1032,10 @@ QString TTool::updateEnabled(int rowIndex, int columnIndex) {
       Preferences::instance()->isMultiLayerStylePickerEnabled())
     return (enable(true), QString());
 
+  if (levelType == REF3D_XSHLEVEL && (toolType & TTool::LevelTool))
+    return (enable(false),
+            QObject::tr("Image editing tools cannot be used on a Ref3D level."));
+
   // Check against camera column
   if (!filmstrip && !spline && columnIndex < 0 &&
       (targetType & TTool::EmptyTarget) &&

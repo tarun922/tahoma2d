@@ -36,6 +36,8 @@
 #include "toonz/txshsimplelevel.h"
 #include "toonz/txshchildlevel.h"
 #include "toonz/txshcolumn.h"
+#include "toonz/ref3dmodel.h"
+#include "toonz/ref3ddrawer.h"
 #include "toonz/txshcell.h"
 #include "toonz/onionskinmask.h"
 #include "toonz/dpiscale.h"
@@ -912,6 +914,20 @@ if (!startPoints.empty()) {
 void RasterPainter::onImage(const Stage::Player &player) {
   if (m_singleColumnEnabled && !player.m_isCurrentColumn && !player.m_isMask)
     return;
+  if (player.m_sl && player.m_sl->getType() == REF3D_XSHLEVEL) {
+    if (!m_checkFlags || m_vs.m_forSceneIcon || m_vs.m_forReference ||
+        (player.m_onionSkinDistance != c_noOnionSkin &&
+         player.m_onionSkinDistance != 0))
+      return;
+
+    const std::shared_ptr<Ref3dModel> model =
+        Ref3dModel::loadCached(player.m_sl->getPath());
+    if (model) {
+      flushRasterImages();
+      Ref3dDrawer::draw(*model, m_viewAff, player, false);
+    }
+    return;
+  }
 
   // Attempt Plastic-deformed drawing
   // For now generating icons of plastic-deformed image causes crash as
@@ -1291,6 +1307,18 @@ void OpenGlPainter::onImage(const Stage::Player &player) {
     return;
 
   if (player.m_z < m_minZ) m_minZ = player.m_z;
+
+  if (player.m_sl && player.m_sl->getType() == REF3D_XSHLEVEL) {
+    if (!m_isViewer ||
+        (player.m_onionSkinDistance != c_noOnionSkin &&
+         player.m_onionSkinDistance != 0))
+      return;
+
+    const std::shared_ptr<Ref3dModel> model =
+        Ref3dModel::loadCached(player.m_sl->getPath());
+    if (model) Ref3dDrawer::draw(*model, m_viewAff, player, m_camera3d);
+    return;
+  }
 
   glPushAttrib(GL_ALL_ATTRIB_BITS);
   glPushMatrix();

@@ -13,7 +13,7 @@ The 3D layer is a **guide**. It must stay cheaper than drawing a raster onion sk
 | Draw | 1 draw call, no textures in MVP, no lights (or 1 directional in view space). |
 | Render / preview / tcomposer | **0**. Preview eye off. |
 
-If a model is > **50k triangles**, refuse or show a warning and draw wire AABB only. Artists can retopo in another app.
+If a model exceeds **50k triangles**, log a performance warning but continue loading and drawing the complete mesh. Large models may reduce viewer responsiveness.
 
 ## What not to implement in MVP (expensive)
 

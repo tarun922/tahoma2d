@@ -1,0 +1,1371 @@
+##### A git status 
+ M toonz/sources/image/tiio.cpp
+ M toonz/sources/include/tfiletype.h
+ M toonz/sources/include/toonz/txshleveltypes.h
+ M toonz/sources/toonzlib/CMakeLists.txt
+?? thirdparty/tinygltf/
+?? toonz/sources/include/toonz/ref3dmodel.h
+?? toonz/sources/toonzlib/ref3dmodel.cpp
+ toonz/sources/image/tiio.cpp                 | 3 +++
+ toonz/sources/include/tfiletype.h            | 2 ++
+ toonz/sources/include/toonz/txshleveltypes.h | 3 ++-
+ toonz/sources/toonzlib/CMakeLists.txt        | 3 +++
+ 4 files changed, 10 insertions(+), 1 deletion(-)
+c5584b001 analysis of the code
+5bc10cee9 Merge pull request #2311 from manongjohn/disable_brew_update
+2f79d9aff Disable brew update
+3f2dde0af Merge pull request #2285 from manongjohn/add_ai_policy
+cc372dd42 Merge pull request #2284 from charliemartinez/relocate-tahoma2d-data-to-opt
+D:\ctx_tahoma\tahoma2d\toonz\sources\include\toonz\ref3dmodel.h
+D:\ctx_tahoma\tahoma2d\toonz\sources\toonzlib\ref3dmodel.cpp
+D:\ctx_tahoma\tahoma2d\thirdparty\tinygltf\json.hpp
+D:\ctx_tahoma\tahoma2d\thirdparty\tinygltf\LICENSE
+D:\ctx_tahoma\tahoma2d\thirdparty\tinygltf\tiny_gltf.h
+##### B MESH spots in files docs did not list 
+toonz/sources/toonzlib/txshcolumn.cpp-682-    colType = TXshColumn::eSoundType;
+toonz/sources/toonzlib/txshcolumn.cpp-683-  else if (levelType == SND_TXT_XSHLEVEL)
+toonz/sources/toonzlib/txshcolumn.cpp-684-    colType = TXshColumn::eSoundTextType;
+toonz/sources/toonzlib/txshcolumn.cpp:685:  else if (levelType == MESH_XSHLEVEL)
+toonz/sources/toonzlib/txshcolumn.cpp-686-    colType = TXshColumn::eMeshType;
+toonz/sources/toonzlib/txshcolumn.cpp-687-  else if (levelType == FOLDER_XSHLEVEL)
+toonz/sources/toonzlib/txshcolumn.cpp-688-    colType = TXshColumn::eFolderType;
+toonz/sources/toonzlib/txshcolumn.cpp-689-  else
+toonz/sources/toonzlib/txshcolumn.cpp-690-    assert(!"Unknown level type!");
+toonz/sources/toonzlib/txshcolumn.cpp-691-
+toonz/sources/toonzlib/txshcolumn.cpp-692-  return colType;
+toonz/sources/toonzlib/txshcolumn.cpp-693-}
+--
+toonz/sources/toonzlib/txsheet.cpp-348-      type = TXshColumn::ePaletteType;
+toonz/sources/toonzlib/txsheet.cpp-349-    else if (levelType == ZERARYFX_XSHLEVEL)
+toonz/sources/toonzlib/txsheet.cpp-350-      type = TXshColumn::eZeraryFxType;
+toonz/sources/toonzlib/txsheet.cpp:351:    else if (levelType == MESH_XSHLEVEL)
+toonz/sources/toonzlib/txsheet.cpp-352-      type = TXshColumn::eMeshType;
+toonz/sources/toonzlib/txsheet.cpp-353-
+toonz/sources/toonzlib/txsheet.cpp-354-    cellColumn = touchColumn(col, type)->getCellColumn();
+toonz/sources/toonzlib/txsheet.cpp-355-  } else {
+toonz/sources/toonzlib/txsheet.cpp-356-    TXshColumn *column = getColumn(col);
+toonz/sources/toonzlib/txsheet.cpp-357-    cellColumn         = column ? column->getCellColumn() : 0;
+toonz/sources/toonzlib/txsheet.cpp-358-  }
+toonz/sources/toonzlib/txsheet.cpp-359-
+--
+toonz/sources/toonzlib/txsheet.cpp-436-      type = TXshColumn::ePaletteType;
+toonz/sources/toonzlib/txsheet.cpp-437-    else if (levelType == ZERARYFX_XSHLEVEL)
+toonz/sources/toonzlib/txsheet.cpp-438-      type = TXshColumn::eZeraryFxType;
+toonz/sources/toonzlib/txsheet.cpp:439:    else if (levelType == MESH_XSHLEVEL)
+toonz/sources/toonzlib/txsheet.cpp-440-      type = TXshColumn::eMeshType;
+toonz/sources/toonzlib/txsheet.cpp-441-  }
+toonz/sources/toonzlib/txsheet.cpp-442-  bool wasColumnEmpty = isColumnEmpty(col);
+toonz/sources/toonzlib/txsheet.cpp-443-  if (col < 0) return false;
+toonz/sources/toonzlib/txsheet.cpp-444-  TXshCellColumn *column = touchColumn(col, type)->getCellColumn();
+toonz/sources/toonzlib/txsheet.cpp-445-  if (!column) return false;
+toonz/sources/toonzlib/txsheet.cpp-446-
+toonz/sources/toonzlib/txsheet.cpp-447-  int oldColRowCount = column->getMaxFrame(true) + 1;
+--
+toonz/sources/toonz/tapp.cpp-348-    case PLI_XSHLEVEL:
+toonz/sources/toonz/tapp.cpp-349-    default:
+toonz/sources/toonz/tapp.cpp-350-      return TImage::VECTOR;
+toonz/sources/toonz/tapp.cpp:351:    case MESH_XSHLEVEL:
+toonz/sources/toonz/tapp.cpp-352-      return TImage::MESH;
+toonz/sources/toonz/tapp.cpp-353-    }
+toonz/sources/toonz/tapp.cpp-354-  }
+toonz/sources/toonz/tapp.cpp-355-
+toonz/sources/toonz/tapp.cpp-356-  return TImage::VECTOR;
+toonz/sources/toonz/tapp.cpp-357-}
+toonz/sources/toonz/tapp.cpp-358-
+toonz/sources/toonz/tapp.cpp-359-//-----------------------------------------------------------------------------
+--
+toonz/sources/toonz/toolbar.cpp-132-  default:
+toonz/sources/toonz/toolbar.cpp-133-    targetType = TTool::VectorImage;
+toonz/sources/toonz/toolbar.cpp-134-    break;
+toonz/sources/toonz/toolbar.cpp:135:  case MESH_XSHLEVEL:
+toonz/sources/toonz/toolbar.cpp-136-    targetType = TTool::MeshImage;
+toonz/sources/toonz/toolbar.cpp-137-    break;
+toonz/sources/toonz/toolbar.cpp-138-  }
+toonz/sources/toonz/toolbar.cpp-139-
+toonz/sources/toonz/toolbar.cpp-140-  // Hide action for now
+toonz/sources/toonz/toolbar.cpp-141-  for (int idx = 0; m_buttonLayout[idx].toolName; idx++) {
+toonz/sources/toonz/toolbar.cpp-142-    if (m_buttonLayout[idx].action) removeAction(m_buttonLayout[idx].action);
+toonz/sources/toonz/toolbar.cpp-143-  }
+--
+toonz/sources/toonz/xsheetviewer.cpp-114-                               : getSoundTextColumnColor();
+toonz/sources/toonz/xsheetviewer.cpp-115-      sideColor = getSoundTextColumnBorderColor();
+toonz/sources/toonz/xsheetviewer.cpp-116-      break;
+toonz/sources/toonz/xsheetviewer.cpp:117:    case MESH_XSHLEVEL:
+toonz/sources/toonz/xsheetviewer.cpp-118-      cellColor =
+toonz/sources/toonz/xsheetviewer.cpp-119-          (isSelected) ? getSelectedMeshColumnColor() : getMeshColumnColor();
+toonz/sources/toonz/xsheetviewer.cpp-120-      sideColor = getMeshColumnBorderColor();
+toonz/sources/toonz/xsheetviewer.cpp-121-      break;
+toonz/sources/toonz/xsheetviewer.cpp-122-    case PLT_XSHLEVEL:
+toonz/sources/toonz/xsheetviewer.cpp-123-      cellColor =
+toonz/sources/toonz/xsheetviewer.cpp-124-          (isSelected) ? getSelectedPaletteColumnColor() : getPaletteColumnColor();
+toonz/sources/toonz/xsheetviewer.cpp-125-      sideColor = getPaletteColumnBorderColor();
+--
+toonz/sources/toonz/castviewer.cpp-749-    levelSelectedCount++;
+toonz/sources/toonz/castviewer.cpp-750-    if (sl->getType() == PLI_XSHLEVEL)
+toonz/sources/toonz/castviewer.cpp-751-      vectorLevelSelected = true;
+toonz/sources/toonz/castviewer.cpp:752:    else if (sl->getType() == MESH_XSHLEVEL)
+toonz/sources/toonz/castviewer.cpp-753-      meshLevelSelected = true;
+toonz/sources/toonz/castviewer.cpp-754-    else
+toonz/sources/toonz/castviewer.cpp-755-      otherFileSelected = true;
+toonz/sources/toonz/castviewer.cpp-756-  }
+toonz/sources/toonz/castviewer.cpp-757-  QMenu *menu        = new QMenu(parent);
+toonz/sources/toonz/castviewer.cpp-758-  CommandManager *cm = CommandManager::instance();
+toonz/sources/toonz/castviewer.cpp-759-
+toonz/sources/toonz/castviewer.cpp-760-  menu->addAction(cm->getAction(MI_LevelSettings));
+--
+toonz/sources/toonz/filmstrip.cpp-1900-    TXshSimpleLevel *tempLevel = m_levels[i];
+toonz/sources/toonz/filmstrip.cpp-1901-      std::wstring currName = currentLevel->getName();
+toonz/sources/toonz/filmstrip.cpp-1902-      int type = tempLevel->getType();
+toonz/sources/toonz/filmstrip.cpp:1903:      if (type < 0 || type > MESH_XSHLEVEL) break;
+toonz/sources/toonz/filmstrip.cpp-1904-      std::wstring tempName = tempLevel->getName();
+toonz/sources/toonz/filmstrip.cpp-1905-
+toonz/sources/toonz/filmstrip.cpp-1906-    if (!currentLevel->isEmpty() && !tempLevel->isEmpty() && currentLevel->getName() == tempLevel->getName()) {
+toonz/sources/toonz/filmstrip.cpp-1907-      m_chooseLevelCombo->setCurrentIndex(i);
+toonz/sources/toonz/filmstrip.cpp-1908-      return;
+toonz/sources/toonz/filmstrip.cpp-1909-    }
+toonz/sources/toonz/filmstrip.cpp-1910-  }
+toonz/sources/toonz/filmstrip.cpp-1911-
+--
+toonz/sources/toonz/filmstripselection.cpp-56-  TFilePath path = sl->getPath();
+toonz/sources/toonz/filmstripselection.cpp-57-
+toonz/sources/toonz/filmstripselection.cpp-58-  bool doEnable =
+toonz/sources/toonz/filmstripselection.cpp:59:      (type == PLI_XSHLEVEL || type == TZP_XSHLEVEL || type == MESH_XSHLEVEL ||
+toonz/sources/toonz/filmstripselection.cpp-60-       (type == OVL_XSHLEVEL && !path.isUneditable()));
+toonz/sources/toonz/filmstripselection.cpp-61-
+toonz/sources/toonz/filmstripselection.cpp-62-
+toonz/sources/toonz/filmstripselection.cpp-63-  TRasterImageP ri = (TRasterImageP)sl->getSimpleLevel()->getFrame(
+toonz/sources/toonz/filmstripselection.cpp-64-      sl->getSimpleLevel()->getFirstFid(), false);
+toonz/sources/toonz/filmstripselection.cpp-65-
+toonz/sources/toonz/filmstripselection.cpp-66-  bool isNotEditableFullColorLevel =
+toonz/sources/toonz/filmstripselection.cpp-67-      ((type == OVL_XSHLEVEL && path.getFrame() == TFrameId::NO_FRAME) ||
+--
+toonz/sources/toonz/filmstripselection.cpp-84-    enableCommand(this, MI_Each4, &TFilmstripSelection::eachFrames, 4);
+toonz/sources/toonz/filmstripselection.cpp-85-    enableCommand(this, MI_Duplicate, &TFilmstripSelection::duplicateFrames);
+toonz/sources/toonz/filmstripselection.cpp-86-
+toonz/sources/toonz/filmstripselection.cpp:87:    if (type != MESH_XSHLEVEL) {
+toonz/sources/toonz/filmstripselection.cpp-88-      enableCommand(this, MI_Insert, &TFilmstripSelection::insertEmptyFrames);
+toonz/sources/toonz/filmstripselection.cpp-89-      enableCommand(this, MI_MergeFrames, &TFilmstripSelection::mergeFrames);
+toonz/sources/toonz/filmstripselection.cpp-90-
+toonz/sources/toonz/filmstripselection.cpp-91-      enableCommand(this, MI_AddFrames, &TFilmstripSelection::addFrames);
+toonz/sources/toonz/filmstripselection.cpp-92-    }
+toonz/sources/toonz/filmstripselection.cpp-93-  } else if (isNotEditableFullColorLevel)
+toonz/sources/toonz/filmstripselection.cpp-94-    enableCommand(this, MI_Copy, &TFilmstripSelection::copyFrames);
+toonz/sources/toonz/filmstripselection.cpp-95-
+--
+toonz/sources/toonz/cellselection.cpp-2793-        int levelType = level->getType();
+toonz/sources/toonz/cellselection.cpp-2794-        if (levelType == ZERARYFX_XSHLEVEL || levelType == PLT_XSHLEVEL ||
+toonz/sources/toonz/cellselection.cpp-2795-            levelType == SND_XSHLEVEL || levelType == SND_TXT_XSHLEVEL ||
+toonz/sources/toonz/cellselection.cpp:2796:            levelType == MESH_XSHLEVEL || levelType == FOLDER_XSHLEVEL) {
+toonz/sources/toonz/cellselection.cpp-2797-          DVGui::warning(
+toonz/sources/toonz/cellselection.cpp-2798-              QObject::tr("Cannot duplicate a drawing in the current column"));
+toonz/sources/toonz/cellselection.cpp-2799-          return;
+toonz/sources/toonz/cellselection.cpp-2800-        } else if (level->getSimpleLevel() &&
+toonz/sources/toonz/cellselection.cpp-2801-                   level->getSimpleLevel()->isReadOnly()) {
+toonz/sources/toonz/cellselection.cpp-2802-          DVGui::warning(
+toonz/sources/toonz/cellselection.cpp-2803-              QObject::tr("Cannot duplicate frames in read only levels"));
+toonz/sources/toonz/cellselection.cpp-2804-          return;
+--
+toonz/sources/toonz/cellselection.cpp-3281-    int levelType = level->getType();
+toonz/sources/toonz/cellselection.cpp-3282-    if (levelType == ZERARYFX_XSHLEVEL || levelType == PLT_XSHLEVEL ||
+toonz/sources/toonz/cellselection.cpp-3283-        levelType == SND_XSHLEVEL || levelType == SND_TXT_XSHLEVEL ||
+toonz/sources/toonz/cellselection.cpp:3284:        levelType == MESH_XSHLEVEL || levelType == FOLDER_XSHLEVEL) {
+toonz/sources/toonz/cellselection.cpp-3285-      if (!multiple)
+toonz/sources/toonz/cellselection.cpp-3286-        DVGui::warning(
+toonz/sources/toonz/cellselection.cpp-3287-            QObject::tr("Cannot create a blank drawing on the current column"));
+toonz/sources/toonz/cellselection.cpp-3288-      return;
+toonz/sources/toonz/cellselection.cpp-3289-    } else if (level->getSimpleLevel() &&
+toonz/sources/toonz/cellselection.cpp-3290-               level->getSimpleLevel()->isReadOnly()) {
+toonz/sources/toonz/cellselection.cpp-3291-      if (!multiple)
+toonz/sources/toonz/cellselection.cpp-3292-        DVGui::warning(QObject::tr("The current level is not editable"));
+--
+toonz/sources/toonz/cellselection.cpp-3534-    int levelType = level->getType();
+toonz/sources/toonz/cellselection.cpp-3535-    if (levelType == ZERARYFX_XSHLEVEL || levelType == PLT_XSHLEVEL ||
+toonz/sources/toonz/cellselection.cpp-3536-        levelType == SND_XSHLEVEL || levelType == SND_TXT_XSHLEVEL ||
+toonz/sources/toonz/cellselection.cpp:3537:        levelType == MESH_XSHLEVEL || levelType == FOLDER_XSHLEVEL) {
+toonz/sources/toonz/cellselection.cpp-3538-      if (!multiple)
+toonz/sources/toonz/cellselection.cpp-3539-        DVGui::warning(
+toonz/sources/toonz/cellselection.cpp-3540-            QObject::tr("Cannot duplicate a drawing in the current column"));
+toonz/sources/toonz/cellselection.cpp-3541-      return;
+toonz/sources/toonz/cellselection.cpp-3542-    } else if (level->getSimpleLevel() &&
+toonz/sources/toonz/cellselection.cpp-3543-               level->getSimpleLevel()->isReadOnly()) {
+toonz/sources/toonz/cellselection.cpp-3544-      if (!multiple)
+toonz/sources/toonz/cellselection.cpp-3545-        DVGui::warning(QObject::tr("The current level is not editable"));
+--
+toonz/sources/toonz/levelsettingspopup.cpp-701-    else
+toonz/sources/toonz/levelsettingspopup.cpp-702-      return NonLinearRaster;
+toonz/sources/toonz/levelsettingspopup.cpp-703-  }
+toonz/sources/toonz/levelsettingspopup.cpp:704:  case MESH_XSHLEVEL:
+toonz/sources/toonz/levelsettingspopup.cpp-705-    return Mesh;
+toonz/sources/toonz/levelsettingspopup.cpp-706-  case PLI_XSHLEVEL:
+toonz/sources/toonz/levelsettingspopup.cpp-707-    return ToonzVector;
+toonz/sources/toonz/levelsettingspopup.cpp-708-  case PLT_XSHLEVEL:
+toonz/sources/toonz/levelsettingspopup.cpp-709-    return Palette;
+toonz/sources/toonz/levelsettingspopup.cpp-710-  case CHILD_XSHLEVEL:
+toonz/sources/toonz/levelsettingspopup.cpp-711-    return SubXsheet;
+toonz/sources/toonz/levelsettingspopup.cpp-712-  case SND_XSHLEVEL:
+--
+toonz/sources/toonz/exportpanel.cpp-86-      for (int i = 0; i < n; i++) {
+toonz/sources/toonz/exportpanel.cpp-87-        TXshCell currCell = cells[i];
+toonz/sources/toonz/exportpanel.cpp-88-        if (!cells[i].isEmpty() &&
+toonz/sources/toonz/exportpanel.cpp:89:            cells[i].m_level->getType() == MESH_XSHLEVEL) {
+toonz/sources/toonz/exportpanel.cpp-90-          return true;
+toonz/sources/toonz/exportpanel.cpp-91-        }
+toonz/sources/toonz/exportpanel.cpp-92-        // check the sub xsheets too
+toonz/sources/toonz/exportpanel.cpp-93-        if (!cells[i].isEmpty() &&
+toonz/sources/toonz/exportpanel.cpp-94-            cells[i].m_level->getType() == CHILD_XSHLEVEL) {
+toonz/sources/toonz/exportpanel.cpp-95-          TXshChildLevel *level = cells[i].m_level->getChildLevel();
+toonz/sources/toonz/exportpanel.cpp-96-          // make sure we haven't already checked the level
+toonz/sources/toonz/exportpanel.cpp-97-          if (level && std::find(childLevels.begin(), childLevels.end(),
+--
+toonz/sources/toonzqt/schematicviewer.cpp-962-  case CHILD_XSHLEVEL:
+toonz/sources/toonzqt/schematicviewer.cpp-963-    nodeColor = getChildColumnColor();
+toonz/sources/toonzqt/schematicviewer.cpp-964-    break;
+toonz/sources/toonzqt/schematicviewer.cpp:965:  case MESH_XSHLEVEL:
+toonz/sources/toonzqt/schematicviewer.cpp-966-    nodeColor = getMeshColumnColor();
+toonz/sources/toonzqt/schematicviewer.cpp-967-    break;
+toonz/sources/toonzqt/schematicviewer.cpp-968-  case PLT_XSHLEVEL:
+toonz/sources/toonzqt/schematicviewer.cpp-969-    nodeColor = getPaletteColumnColor();
+toonz/sources/toonzqt/schematicviewer.cpp-970-    break;
+toonz/sources/toonzqt/schematicviewer.cpp-971-  case eNormalFx:
+toonz/sources/toonzqt/schematicviewer.cpp-972-    nodeColor = getNormalFxColor();
+toonz/sources/toonzqt/schematicviewer.cpp-973-    break;
+--
+toonz/sources/toonzlib/imagebuilders.cpp-190-  // NOTE: Vector and Mesh dont care about sub sampling rate and bit depth
+toonz/sources/toonzlib/imagebuilders.cpp-191-  // compatibility.
+toonz/sources/toonzlib/imagebuilders.cpp-192-  //       They are property of Raster.
+toonz/sources/toonzlib/imagebuilders.cpp:193:  if (sl->getType() == PLI_XSHLEVEL || sl->getType() == MESH_XSHLEVEL)
+toonz/sources/toonzlib/imagebuilders.cpp-194-    return true;
+toonz/sources/toonzlib/imagebuilders.cpp-195-
+toonz/sources/toonzlib/imagebuilders.cpp-196-  int subsampling = buildSubsampling(imFlags, data);
+toonz/sources/toonzlib/imagebuilders.cpp-197-
+toonz/sources/toonzlib/imagebuilders.cpp-198-  if (m_subsampling <= 0 || subsampling != m_subsampling) return false;
+toonz/sources/toonzlib/imagebuilders.cpp-199-
+toonz/sources/toonzlib/imagebuilders.cpp-200-  if (m_path.getType() == "exr" &&
+toonz/sources/toonzlib/imagebuilders.cpp-201-      !areAlmostEqual(m_colorSpaceGamma,
+##### C txshsimplelevel.cpp loadData ext switch 1060-1100 
+        setName(m_name);
+        type = OVL_XSHLEVEL;
+        m_properties->setDpi(TPointD(xdpi, ydpi));
+        setType(type);
+        setPath(TFilePath("+drawings/") +
+                    (getName() + L"." + ::to_wstring(extension)),
+                true);
+      } else {
+        m_name = token;
+        setName(m_name);
+      }
+    }
+  }
+  if (type == UNKNOWN_XSHLEVEL) {
+    std::string ext = m_path.getType();
+    if (ext == "pli" || ext == "svg")
+      type = PLI_XSHLEVEL;
+    else if (ext == "tlv" || ext == "tzu" || ext == "tzp" || ext == "tzl")
+      type = TZP_XSHLEVEL;
+    else if (ext == "tzi")
+      type = TZI_XSHLEVEL;
+    else if (ext == "mesh")
+      type = MESH_XSHLEVEL;
+    else
+      type = OVL_XSHLEVEL;
+  }
+  setType(type);
+}
+
+//-----------------------------------------------------------------------------
+
+namespace {
+class LoadingLevelRange {
+public:
+  TFrameId m_fromFid, m_toFid;
+  LoadingLevelRange() : m_fromFid(1), m_toFid(0) {}
+
+  bool match(const TFrameId &fid) const {
+    /*-- ↓SubSequent範囲内にある条件		↓全部ロードする場合 --*/
+    return ((m_fromFid <= fid && fid <= m_toFid) || m_fromFid > m_toFid);
+  }
+##### C2 load 1169-1260 
+void TXshSimpleLevel::load() {
+  getProperties()->setCreator("");
+  QString creator;
+
+  assert(getScene());
+  if (!getScene()) return;
+
+  m_isSubsequence = loadingLevelRange.isEnabled();
+
+  TFilePath checkpath = getScene()->decodeFilePath(m_path);
+  std::string type    = checkpath.getType();
+
+  if (m_scannedPath != TFilePath()) {
+    getProperties()->setDirtyFlag(
+        false);  // Level is now supposedly loaded from disk
+
+    static const int ScannedCleanuppedMask = Scanned | Cleanupped;
+    TFilePath path = getScene()->decodeFilePath(m_scannedPath);
+    if (TSystem::doesExistFileOrLevel(path)) {
+      TLevelReaderP lr(path);
+      assert(lr);
+      TLevelP level = lr->loadInfo();
+      if (!checkCreatorString(creator = lr->getCreator()))
+        getProperties()->setIsForbidden(true);
+      else
+        for (TLevel::Iterator it = level->begin(); it != level->end(); it++) {
+          TFrameId fid = it->first;
+          if (!loadingLevelRange.match(fid)) continue;
+          setFrameStatus(
+              fid, (getFrameStatus(fid) & ~ScannedCleanuppedMask) | Scanned);
+          setFrame(fid, TImageP());
+        }
+    }
+
+    path = getScene()->decodeFilePath(m_path);
+    if (TSystem::doesExistFileOrLevel(path)) {
+      TLevelReaderP lr(path);
+      assert(lr);
+      TLevelP level = lr->loadInfo();
+      if (getType() & FULLCOLOR_TYPE)
+        setPalette(FullColorPalette::instance()->getPalette(getScene()));
+      else
+        setPalette(level->getPalette());
+      if (!checkCreatorString(creator = lr->getCreator()))
+        getProperties()->setIsForbidden(true);
+      else
+        for (TLevel::Iterator it = level->begin(); it != level->end(); it++) {
+          TFrameId fid = it->first;
+          if (!loadingLevelRange.match(fid)) continue;
+          setFrameStatus(fid, getFrameStatus(fid) | Cleanupped);
+          setFrame(fid, TImageP());
+        }
+      setContentHistory(
+          lr->getContentHistory() ? lr->getContentHistory()->clone() : 0);
+    }
+
+  } else {
+    // Not a scan + cleanup level
+
+    // Loading PSD files via load level command needs to convert layerID in the
+    // file path to layer name here. The conversion is not needed on loading
+    // scene as the file path loaded from the scene file is already converted.
+    if (m_path.getType() == "psd" && !this->getScene()->isLoading())
+      m_path = getLevelPathAndSetNameWithPsdLevelName(this);
+
+    TFilePath path = getScene()->decodeFilePath(m_path);
+
+    getProperties()->setDirtyFlag(
+        false);  // Level is now supposedly loaded from disk
+
+    TLevelReaderP lr(path);  // May throw
+    assert(lr);
+
+    lr->setUseExactPath(getScene()->isLoading());
+
+    TLevelP level = lr->loadInfo();
+    if (level->isPartialLoad()) {
+      QString msg =
+          QString(
+              "File '%1' partially loaded. Not all frames were found. Possible "
+              "file corruption. Loaded what could be found.\nRecommend "
+              "replacing any bad frames in Level Strip and saving.")
+              .arg(QString::fromStdWString(m_path.getWideString()));
+      QMessageBox::warning(0, "File load warning", msg);
+      setDirtyFlag(true);
+    }
+    if (level->getFrameCount() > 0) {
+      const TImageInfo *info = lr->getImageInfo(level->begin()->first);
+
+      if (info && info->m_samplePerPixel >= 5) {
+        QString msg = QString(
+                          "Failed to open %1.\nSamples per pixel is more than "
+##### C3 save 1546-1720 
+void TXshSimpleLevel::save() {
+  assert(getScene());
+  TFilePath path = getScene()->decodeFilePath(m_path);
+  TSystem::outputDebug("save() : " + ::to_string(m_path) + " = " +
+                       ::to_string(path) + "\n");
+
+  if (getProperties()->getDirtyFlag() == false &&
+      getPalette()->getDirtyFlag() == false &&
+      TSystem::doesExistFileOrLevel(path))
+    return;
+
+  if (!TFileStatus(path.getParentDir()).doesExist()) {
+    try {
+      TSystem::mkDir(path.getParentDir());
+    } catch (...) {
+    }
+  }
+  save(path);
+}
+
+//-----------------------------------------------------------------------------
+
+static void saveBackup(TFilePath path) {
+  // The additional .bak extension keeps it from being detected as a sequence.
+  // If the original path is a sequence, find the individual files and back it
+  // up individually
+  if (path.isLevelName()) {
+    TFilePathSet files =
+        TSystem::readDirectory(path.getParentDir(), false, true);
+    for (TFilePathSet::iterator file = files.begin(); file != files.end();
+         file++) {
+      if (file->getLevelName() == path.getLevelName()) saveBackup(*file);
+    }
+    return;
+  }
+
+  int totalBackups = Preferences::instance()->getBackupKeepCount();
+  totalBackups -= 1;
+  TFilePath backup = path.withType(path.getType() + ".bak");
+  TFilePath prevBackup =
+      path.withType(path.getType() + ".bak" + std::to_string(totalBackups));
+  while (--totalBackups >= 0) {
+    std::string bakExt =
+        ".bak" + (totalBackups > 0 ? std::to_string(totalBackups) : "");
+    backup = path.withType(path.getType() + bakExt);
+    if (TSystem::doesExistFileOrLevel(backup)) {
+      try {
+        TSystem::copyFileOrLevel_throw(prevBackup, backup);
+      } catch (...) {
+      }
+    }
+    prevBackup = backup;
+  }
+
+  try {
+    if (TSystem::doesExistFileOrLevel(backup))
+      TSystem::removeFileOrLevel_throw(backup);
+    TSystem::copyFileOrLevel_throw(backup, path);
+  } catch (...) {
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void TXshSimpleLevel::save(const TFilePath &fp, const TFilePath &oldFp,
+                           bool overwritePalette) {
+  TFilePath dOldPath =
+      (!oldFp.isEmpty()) ? oldFp : getScene()->decodeFilePath(m_path);
+
+  TFilePath dDstPath = getScene()->decodeFilePath(fp);
+  if (!TSystem::touchParentDir(dDstPath))
+    throw TSystemException(
+        dDstPath,
+        "The level cannot be saved: failed to access the target folder.");
+
+  // backup
+  if (Preferences::instance()->isBackupEnabled() && dOldPath == dDstPath &&
+      TSystem::doesExistFileOrLevel(dDstPath))
+    if (!getProperties()->isStopMotionLevel()) saveBackup(dDstPath);
+
+  if (isAreadOnlyLevel(dDstPath)) {
+    if (m_editableRange.empty() &&
+        !m_temporaryHookMerged)  // file internally locked
+      throw TSystemException(
+          dDstPath, "The level cannot be saved: it is a read only level.");
+    else if (getType() != OVL_XSHLEVEL) {
+      // file partially unlocked
+      std::wstring fileName = getEditableFileName();
+      assert(!fileName.empty());
+
+      TFilePath app = dDstPath.withName(fileName).withType(dDstPath.getType());
+
+      // removes old files
+      if (TSystem::doesExistFileOrLevel(app)) TSystem::removeFileOrLevel(app);
+
+      TFilePathSet oldFilePaths;
+      getFiles(app, oldFilePaths);
+
+      TFilePathSet::iterator it;
+      for (it = oldFilePaths.begin(); it != oldFilePaths.end(); ++it) {
+        if (TSystem::doesExistFileOrLevel(*it)) TSystem::removeFileOrLevel(*it);
+      }
+
+      // save new files
+      TXshSimpleLevel *sl = new TXshSimpleLevel;
+      sl->setScene(getScene());
+      sl->setPalette(getPalette());
+      sl->setPath(getScene()->codeFilePath(app));
+      sl->setType(getType());
+      sl->setDirtyFlag(getDirtyFlag());
+      sl->addRef();  // Needed so levelUpdater doesn't destroy it right away
+                     // when its done writing
+
+      std::set<TFrameId>::iterator eft, efEnd = m_editableRange.end();
+      for (eft = m_editableRange.begin(); eft != efEnd; ++eft) {
+        const TFrameId &fid = *eft;
+        sl->setFrame(fid, getFrame(fid, false));
+      }
+
+      // Copy hooks
+      HookSet *hookSet = sl->getHookSet();
+      *hookSet         = *getHookSet();
+
+      FramesSet::iterator ft, fEnd = m_frames.end();
+      for (ft = m_frames.begin(); ft != fEnd; ++ft) {
+        const TFrameId &fid = *ft;
+
+        if (m_editableRange.find(fid) == m_editableRange.end())
+          hookSet->eraseFrame(fid);
+      }
+
+      sl->setRenumberTable();
+
+      // Copy mesh level
+      sl->save(app);
+
+#ifdef _WIN32
+
+      // hides files
+      oldFilePaths.clear();
+
+      if (TSystem::doesExistFileOrLevel(app)) TSystem::hideFileOrLevel(app);
+
+      getFiles(app, oldFilePaths);
+
+      for (it = oldFilePaths.begin(); it != oldFilePaths.end(); ++it) {
+        if (TSystem::doesExistFileOrLevel(*it)) TSystem::hideFileOrLevel(*it);
+      }
+#endif
+      return;
+    }
+  }
+
+  if (dOldPath != dDstPath && m_path != TFilePath()) {
+    const TFilePath &dSrcPath = dOldPath;
+
+    try {
+      if (TSystem::doesExistFileOrLevel(dSrcPath)) {
+        if (TSystem::doesExistFileOrLevel(dDstPath))
+          TSystem::removeFileOrLevel(dDstPath);
+
+        copyFiles(dDstPath, dSrcPath);
+      }
+    } catch (...) {
+    }
+  }
+  // when saving the level palette with global name
+  if (overwritePalette && getType() == TZP_XSHLEVEL && getPalette() &&
+      getPalette()->getGlobalName() != L"") {
+    overwritePalette      = false;
+    TFilePath palettePath = dDstPath.withNoFrame().withType("tpl");
+    StudioPalette::instance()->save(palettePath, getPalette());
+    getPalette()->setDirtyFlag(false);
+  }
+
+##### C4 createEmptyFrame 2120-2165 
+
+  getProperties()->setImageDpi(TPointD(dpi, dpiY));
+  getProperties()->setDpi(dpi);
+}
+
+//-----------------------------------------------------------------------------
+
+// crea un frame con tipo, dimensioni, dpi, ecc. compatibili con il livello
+TImageP TXshSimpleLevel::createEmptyFrame() {
+  // In case this is the first frame to be created in this level (i.e. the level
+  // file was missing when loading resources) initialize the level in the same
+  // manner as createNewLevel() in order to avoid crash. This can be happened if
+  // the level was not saved after creating and being placed in the xsheet.
+  if (isEmpty()) {
+    if (!getPalette()) initializePalette();
+    initializeResolutionAndDpi();
+  }
+
+  TImageP result;
+
+  switch (m_type) {
+  case PLI_XSHLEVEL:
+    result = new TVectorImage;
+    break;
+
+  case MESH_XSHLEVEL:
+    assert(false);  // Not implemented yet
+    break;
+
+  default: {
+    // normally the image must have the level->getProperties()->getImageDpi().
+    // if this value is missing (for some reason - can this happen, ever?) then
+    // we use the getDpi() (that is the current dpi, e.g. cameraDpi or
+    // customDpi).
+
+    TPointD dpi = getProperties()->getImageDpi();
+    /*--
+    tgaからtlvにconvertしたものをInsert Pasteしたとき、
+    ペーストしたフレームにのみDPIが付いてしまうので、この処理は省く
+    --*/
+    // if(dpi.x==0.0 || dpi.y==0.0)
+    //  dpi = getProperties()->getDpi();
+
+    TDimension res = getProperties()->getImageRes();
+
+    if (m_type == TZP_XSHLEVEL) {
+##### C5 getBBox 2515-2580 
+                       TFilePath(hookFiles[h].toStdWString());
+}
+
+//-----------------------------------------------------------------------------
+
+TRectD TXshSimpleLevel::getBBox(const TFrameId &fid) const {
+  TRectD bbox;
+  double dpiX = Stage::inch, dpiY = dpiX;
+
+  // Get the frame bbox in image coordinates
+  switch (getType()) {
+  case PLI_XSHLEVEL:
+  case MESH_XSHLEVEL: {
+    // Load the image and extract its bbox forcibly
+    TImageP img = getFrame(fid, false);
+    if (!img) return TRectD();
+
+    bbox = img->getBBox();
+
+    if (TMeshImageP mi = img) mi->getDpi(dpiX, dpiY);
+
+    break;
+  }
+
+  default: {
+    // Raster case: retrieve the image info from the ImageManager
+    const std::string &imageId = getImageId(fid);
+
+    const TImageInfo *info =
+        ImageManager::instance()->getInfo(imageId, ImageManager::none, 0);
+    if (!info) return TRectD();
+
+    bbox = TRectD(TPointD(info->m_x0, info->m_y0),
+                  TPointD(info->m_x1, info->m_y1)) -
+           0.5 * TPointD(info->m_lx, info->m_ly);
+
+    if (info->m_dpix > 0.0 && info->m_dpiy > 0.0)
+      dpiX = info->m_dpix, dpiY = info->m_dpiy;
+
+    break;
+  }
+  }
+
+  // Get the frame's dpi and traduce the bbox to inch coordinates
+  return TScale(1.0 / dpiX, 1.0 / dpiY) * bbox;
+}
+
+//-----------------------------------------------------------------------------
+
+bool TXshSimpleLevel::isFrameReadOnly(TFrameId fid) {
+  // For Raster and mesh files, check to see if files are marked as read-only at
+  // the OS level
+  if (getType() == OVL_XSHLEVEL || getType() == TZI_XSHLEVEL ||
+      getType() == MESH_XSHLEVEL) {
+    if (getProperties()->isStopMotionLevel()) return true;
+    TFilePath fullPath   = getScene()->decodeFilePath(m_path);
+    std::string fileType = fullPath.getType();
+    if (fullPath.isUneditable()) return true;
+    TFilePath path =
+        fullPath.getDots() == ".." ? fullPath.withFrame(fid) : fullPath;
+    if (!TSystem::doesExistFileOrLevel(path)) return false;
+    TFileStatus fs(path);
+    return !fs.isWritable();
+  }
+
+  // If Level is marked read only, check for editable frames
+##### D toonzscene.cpp 
+// -> 15.0)
+
+//-----------------------------------------------------------------------------
+
+std::string getFolderName(int levelType) {
+  switch (levelType) {
+  case TZI_XSHLEVEL:
+    return TProject::Inputs;
+  case PLI_XSHLEVEL:
+    return TProject::Drawings;
+  case TZP_XSHLEVEL:
+    return TProject::Drawings;
+  case OVL_XSHLEVEL:
+    return TProject::Extras;
+  default:
+    return TProject::Extras;
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+/*
+TFilePath adjustTypeAndFrame(int levelType, TFilePath fp)
+{
+  switch(levelType)
+  {
+    case TZI_XSHLEVEL:
+      if(fp.getType()=="") fp=fp.withType("tif");
+      return fp.withFrame(TFrameId::EMPTY_FRAME);
+    case PLI_XSHLEVEL:
+      return fp.withFrame(TFrameId::NO_FRAME)
+               .withType("pli");
+    case TZP_XSHLEVEL:
+      return fp.withFrame(TFrameId::NO_FRAME)
+               .withType("tlv");
+    case OVL_XSHLEVEL:
+    default:
+      if(fp.getType()=="") fp=fp.withType("png");
+      return fp;
+  }
+}
+----- createNewLevel 
+TXshLevel *ToonzScene::createNewLevel(int type, std::wstring levelName,
+                                      const TDimension &dim, double dpi,
+                                      TFilePath fp) {
+  TLevelSet *levelSet = getLevelSet();
+
+  if (type == TZI_XSHLEVEL)  // TZI type corresponds to the 'Scan Level'
+    type = OVL_XSHLEVEL;     // default option. See Toonz Preferences class.
+
+  if (type == CHILD_XSHLEVEL && levelName == L"") levelName = L"sub";
+
+  // Select a different unique level name in case it already exists (either in
+  // scene or on disk)
+  {
+    const std::unique_ptr<NameBuilder> nameBuilder(
+        NameBuilder::getBuilder(levelName));
+
+    for (;;) {
+      levelName = nameBuilder->getNext();
+      /*-- levelが既にロード済みなら、次の名前を取得 --*/
+      if (m_levelSet->getLevel(levelName) != 0) continue;
+
+      /*-- LevelSetの中に同じファイルパスのLevelがあるかをチェック --*/
+      if (type != CHILD_XSHLEVEL && type != PLT_XSHLEVEL) {
+        if (fp.isEmpty()) fp = getDefaultLevelPath(type, levelName);
+        TFilePath actualFp = decodeFilePath(fp);
+
+        if (TSystem::doesExistFileOrLevel(
+                actualFp))  // if(TFileStatus(actualFp).doesExist()) continue;
+        {
+          fp = TFilePath();
+          continue;
+        }
+
+        int l, lCount = levelSet->getLevelCount();
+        for (l = 0; l != lCount; ++l) {
+          TXshLevel *xl = levelSet->getLevel(l);
+          if (!xl) continue;
+
+          TXshSimpleLevel *sl = xl->getSimpleLevel();
+          if (!sl) continue;
+
+          TFilePath lfp = decodeFilePath(sl->getPath());
+          if (actualFp == lfp) break;
+        }
+
+        if (l < lCount) {
+          /*-- fpが既存のLevelと重複したため、再設定する --*/
+          fp = TFilePath();
+          continue;
+        }
+      }
+      break;
+    }
+  }
+
+  TXshLevel *xl = 0;
+  if (type == CHILD_XSHLEVEL) {
+    TXshChildLevel *cl = new TXshChildLevel(levelName);
+    cl->setScene(this);
+    cl->getXsheet()->setScene(this);
+    xl = cl;
+
+    // Include the project's default cameras
+    const TSceneProperties &props =
+        TProjectManager::instance()->getCurrentProject()->getSceneProperties();
+
+    props.cloneCamerasTo(cl->getXsheet()->getStageObjectTree());
+  } else if (type == PLT_XSHLEVEL) {
+    TXshPaletteLevel *pl = new TXshPaletteLevel(levelName);
+    pl->setScene(this);
+    xl = pl;
+  } else {
+    TXshSimpleLevel *sl = new TXshSimpleLevel(levelName);
+
+    sl->setScene(this);
+    sl->setType(type);
+    sl->setPath(fp);
+    sl->setDirtyFlag(true);
+
+    sl->initializePalette();
+    sl->initializeResolutionAndDpi();
+
+    xl = sl;
+  }
+
+  m_levelSet->insertLevel(xl);
+  TNotifier::instance()->notify(TCastChange());
+
+  return xl;
+}
+
+//-----------------------------------------------------------------------------
+
+TXsheet *ToonzScene::getXsheet() const { return m_childStack->getXsheet(); }
+
+//-----------------------------------------------------------------------------
+
+----- getLevelType 
+static LevelType getLevelType(const TFilePath &fp) {
+  LevelType ret;
+  ret.m_ltype        = UNKNOWN_XSHLEVEL;
+  ret.m_oldLevelFlag = false;
+  ret.m_vectorNotPli = false;
+  ret.m_ext          = fp.getType();
+  std::string format = ret.m_ext;
+
+  TFileType::Type type = TFileType::getInfo(fp);
+
+  switch (type) {
+  case TFileType::RASTER_IMAGE:
+  case TFileType::RASTER_LEVEL:
+  case TFileType::CMAPPED_LEVEL:
+    if (format == "tzp" || format == "tzu") {
+      ret.m_ltype        = TZP_XSHLEVEL;
+      ret.m_oldLevelFlag = true;
+      ret.m_ext          = "tlv";
+    } else if (format == "tzl" || format == "tlv")
+      ret.m_ltype = TZP_XSHLEVEL;
+    else if (format == "tzi")
+      ret.m_ltype = TZI_XSHLEVEL;
+    else
+      ret.m_ltype = OVL_XSHLEVEL;
+    break;
+
+  case TFileType::VECTOR_IMAGE:
+  case TFileType::VECTOR_LEVEL:
+    if (format == "svg") {
+      ret.m_vectorNotPli = true;
+      ret.m_ext          = "pli";
+    }
+    /*  if (format == "svg")
+            ret.m_ext = "pli";*/
+    ret.m_ltype = PLI_XSHLEVEL;
+    break;
+
+  case TFileType::AUDIO_LEVEL:
+    ret.m_ltype = SND_XSHLEVEL;
+    break;
+
+  case TFileType::MESH_IMAGE:
+  case TFileType::MESH_LEVEL:
+    ret.m_ltype = MESH_XSHLEVEL;
+    break;
+  default:
+    break;
+  }
+
+  return ret;
+}
+
+//-----------------------------------------------------------------------------
+
+TFilePath ToonzScene::getImportedLevelPath(const TFilePath path) const {
+----- loadLevel 
+TXshLevel *ToonzScene::loadLevel(const TFilePath &actualPath,
+                                 const LevelOptions *levelOptions,
+                                 std::wstring levelName,
+                                 const std::vector<TFrameId> &fIds) {
+  LevelType ltype = getLevelType(actualPath);
+  if (ltype.m_ltype == UNKNOWN_XSHLEVEL) return 0;
+
+  TFilePath levelPath = actualPath;
+
+  // Ensure the level name is unique
+
+  if (QString::fromStdWString(levelName).isEmpty()) {
+    // if the option is set in the preferences,
+    // remove the scene numbers("c####_") from the file name
+    levelName = getLevelNameWithoutSceneNumber(levelPath.getWideName());
+  }
+
+  NameModifier nm(levelName);
+  levelName = nm.getNext();
+  while (m_levelSet->hasLevel(levelName)) levelName = nm.getNext();
+
+  // Discriminate sound levels
+  if (ltype.m_ltype == SND_XSHLEVEL) {
+    TXshSoundLevel *sl = new TXshSoundLevel(levelName);
+    sl->setType(ltype.m_ltype);
+    sl->setScene(this);
+    sl->setPath(codeFilePath(levelPath));
+
+    try {
+      sl->load();
+    } catch (const std::string &msg)  // Intercepting std::string exceptions
+    {
+      throw TException(msg);
+    }  // from load, and rethrowing... curious!
+    catch (...) {
+      throw;
+    }
+
+    m_levelSet->insertLevel(sl);
+    return sl;
+  } else {
+    TXshSimpleLevel *xl = new TXshSimpleLevel(levelName);
+    xl->setType(ltype.m_ltype);
+    xl->setScene(this);
+
+    if (!convertLevelIfNeeded(levelPath))
+      return 0;  // Conversion failed, bail out
+
+    xl->setPath(codeFilePath(levelPath), true);
+
+    try {
+      if (fIds.size() != 0 && !ltype.m_oldLevelFlag)
+        xl->load(fIds);
+      else
+        xl->load();
+    } catch (const std::string &msg) {
+      throw TException(msg);
+    } catch (...) {
+      throw;
+    }
+
+    if (ltype.m_oldLevelFlag)
+      xl->setDirtyFlag(true);  // Not set on old level formats?
+
+    LevelProperties *lp = xl->getProperties();
+    assert(lp);
+
+    bool formatSpecified = false;
+
+    if (levelOptions)
+      lp->options() = *levelOptions;
+    else {
+      const Preferences &prefs = *Preferences::instance();
+      int formatIdx            = prefs.matchLevelFormat(
+          levelPath);  // Should I use actualPath here? It's mostly
+                                  // irrelevant anyway, it's for old tzp/tzu...
+      if (formatIdx >= 0) {
+        lp->options()   = prefs.levelFormat(formatIdx).m_options;
+        formatSpecified = true;
+      } else {
+        // Default subsampling values are assigned from scene properties
+        if (xl->getType() == OVL_XSHLEVEL)
+          lp->setSubsampling(getProperties()->getFullcolorSubsampling());
+        else if (xl->getType() == TZP_XSHLEVEL)
+          lp->setSubsampling(getProperties()->getTlvSubsampling());
+      }
+    }
+
+    if (lp->getDpiPolicy() == LevelProperties::DP_ImageDpi) {
+      // We must check whether the image actually has a dpi.
+      const TPointD &imageDpi = xl->getImageDpi();
+
+      if (imageDpi == TPointD() ||
+          Preferences::instance()->getUnits() == "pixel" ||
+          Preferences::instance()->isIgnoreImageDpiEnabled()) {
+        // Change to "Custom Dpi" policy and use camera dpi
+        TStageObjectId cameraId =
+----- getDefaultLevelPath 
+TFilePath ToonzScene::getDefaultLevelPath(int levelType,
+                                          std::wstring levelName) const {
+  auto project = getProject();
+  assert(project->isLoaded());
+  TFilePath levelPath;
+  switch (levelType) {
+  case TZI_XSHLEVEL:
+  case OVL_XSHLEVEL: {
+    QString rasterLevelType = Preferences::instance()->getDefRasterFormat();
+    TFrameId tmplFId        = getProperties()->formatTemplateFIdForInput();
+    levelPath = TFilePath(levelName + L"." + rasterLevelType.toStdWString())
+                    .withFrame(tmplFId);
+  } break;
+  case PLI_XSHLEVEL:
+    levelPath = TFilePath(levelName).withType("pli");
+    break;
+  case TZP_XSHLEVEL:
+    levelPath = TFilePath(levelName).withType("tlv");
+    break;
+  default:
+    levelPath = TFilePath(levelName + L"..png");
+  }
+
+  if (!isUntitled() && Preferences::instance()->getPathAliasPriority() ==
+                           Preferences::SceneFolderAlias)
+    return TFilePath("$scenefolder") + levelPath;
+
+  std::string folderName = getFolderName(levelType);
+  if (project->getUseScenePath(folderName))
+    return TFilePath("+" + folderName) + getSavePath() + levelPath;
+  else
+    return TFilePath("+" + folderName) + levelPath;
+}
+
+//-----------------------------------------------------------------------------
+
+const std::wstring savePathString(L"$savepath");
+
+//-----------------------------------------------------------------------------
+
+TFilePath ToonzScene::codeSavePath(TFilePath path) const {
+  if (path == TFilePath()) return path;
+  TFilePath savePath = getSavePath();
+  if (savePath == TFilePath()) return path;  // non dovrebbe succedere mai
+  TFilePath filename;
+  TFilePath originalPath = path;
+  if (savePath.withoutParentDir() != path.withoutParentDir()) {
+    TFilePath parentDir = path.getParentDir();
+    if (parentDir != TFilePath() && !parentDir.isRoot()) {
+      filename = path.withoutParentDir();
+      path     = parentDir;
+    } else
+      return originalPath;
+  }
+
+  TFilePath head;
+  if (!checkTail(path, savePath, head)) return originalPath;
+  if (head.getParentDir() != TFilePath() || head == TFilePath() ||
+      head.getWideString()[0] != L'+')
+##### E stagevisitor onImage 
+1289:void OpenGlPainter::onImage(const Stage::Player &player) {
+1290-  if (m_singleColumnEnabled && !player.m_isCurrentColumn && !player.m_isMask)
+1291-    return;
+1292-
+1293-  if (player.m_z < m_minZ) m_minZ = player.m_z;
+1294-
+1295-  glPushAttrib(GL_ALL_ATTRIB_BITS);
+1296-  glPushMatrix();
+1297-
+1298-  if (m_camera3d)
+1299-    glTranslated(
+1300-        0, 0,
+1301-        player.m_z);  // Ok, move object along z as specified in the player
+1302-
+1303-  // Attempt Plastic-deformed drawing
+1304-  if (TStageObject *obj =
+1305-          ::plasticDeformedObj(player, m_vs.m_plasticVisualSettings))
+1306-    ::onPlasticDeformedImage(obj, player, m_vs, m_viewAff);
+1307-  else if (const TImageP &image = player.image()) {
+1308-    if (TVectorImageP vi = image)
+1309-      onVectorImage(vi.getPointer(), player);
+1310-    else if (TRasterImageP ri = image)
+1311-      onRasterImage(ri.getPointer(), player);
+1312-    else if (TToonzImageP ti = image)
+1313-      onToonzImage(ti.getPointer(), player);
+1314-    else if (TMeshImageP mi = image)
+1315-      onMeshImage(mi.getPointer(), player, m_vs, m_viewAff);
+1316-  }
+1317-
+1318-  glPopMatrix();
+1319-  glPopAttrib();
+1320-}
+1321-
+1322-//-----------------------------------------------------------------------------
+1323-
+1324-void OpenGlPainter::onVectorImage(TVectorImage *vi,
+1325-                                  const Stage::Player &player) {
+1326-  if (m_camera3d && (player.m_onionSkinDistance == c_noOnionSkin ||
+1327-                     player.m_onionSkinDistance == 0)) {
+1328-    const TRectD &bbox = player.m_placement * player.m_dpiAff * vi->getBBox();
+1329-    draw3DShadow(bbox, player.m_z, m_phi);
+1330-  }
+1331-
+1332-  TColorFunction *cf = 0;
+1333-  TOnionFader fader;
+1334-
+912:void RasterPainter::onImage(const Stage::Player &player) {
+913-  if (m_singleColumnEnabled && !player.m_isCurrentColumn && !player.m_isMask)
+914-    return;
+915-
+916-  // Attempt Plastic-deformed drawing
+917-  // For now generating icons of plastic-deformed image causes crash as
+918-  // QOffscreenSurface is created outside the gui thread.
+919-  // As a quick workaround, ignore the deformation if this is called from
+920-  // non-gui thread (i.e. icon generator thread)
+921-  // 12/1/2018 Now the scene icon is rendered without deformation either
+922-  // since it causes unknown error with opengl contexts..
+923-  TStageObject *obj =
+924-      ::plasticDeformedObj(player, m_vs.m_plasticVisualSettings);
+925-  if (obj && QThread::currentThread() == qGuiApp->thread() &&
+926-      (!m_vs.m_forSceneIcon || m_vs.m_forReference)) {
+927-    flushRasterImages();
+928-    ::onPlasticDeformedImage(obj, player, m_vs, m_viewAff);
+929-  } else {
+930-    // Common image draw
+931-    const TImageP &img = player.image();
+932-
+933-    if (TVectorImageP vi = img)
+934-      onVectorImage(vi.getPointer(), player);
+935-    else if (TRasterImageP ri = img)
+936-      onRasterImage(ri.getPointer(), player);
+937-    else if (TToonzImageP ti = img)
+##### F iocommand loadLevel and expose 932-1065 
+TXshLevel *loadLevel(ToonzScene *scene,
+                     const IoCmd::LoadResourceArguments::ResourceData &rd,
+                     const TFilePath &castFolder, int row0, int &col0, int row1,
+                     int &col1, bool expose, std::vector<TFrameId> &fIds,
+                     TFrameId xFrom = TFrameId(), TFrameId xTo = TFrameId(),
+                     std::wstring levelName = L"", int step = -1, int inc = -1,
+                     int frameCount = -1, bool doesFileActuallyExist = true) {
+  TFilePath actualPath = scene->decodeFilePath(rd.m_path);
+
+  LoadLevelUndo *undo                  = 0;
+  LoadAndReplaceLevelUndo *replaceUndo = 0;
+
+  TXsheet *xsh = scene->getXsheet();
+
+  TFileType::Type type = TFileType::getInfo(actualPath);
+  // try to find the level with the same path in the Scene Cast. If found, reuse
+  // it
+  TXshLevel *xl     = getLevelByPath(scene, actualPath);
+  bool isFirstTime  = !xl;
+  std::wstring name = actualPath.getWideName();
+
+  if (isFirstTime && expose &&
+      Preferences::instance()->isAutoRemoveUnusedLevelsEnabled()) {
+    removeSameNamedUnusedLevel(scene, actualPath, levelName);
+  }
+
+  IoCmd::ConvertingPopup *convertingPopup = new IoCmd::ConvertingPopup(
+      TApp::instance()->getMainWindow(),
+      QString::fromStdWString(name) +
+          QString::fromStdString(actualPath.getDottedType()));
+
+  convertingPopup->hide();  // Should be unnecessary
+
+  if (!xl) {
+    try {
+      std::string format = actualPath.getType();
+      if (format == "tzp" || format == "tzu") convertingPopup->show();
+
+      // SVGs are treated as PLI. Ignore the fIds lists
+      if (format != "svg" && fIds.size() != 0 && doesFileActuallyExist)
+        xl = scene->loadLevel(actualPath, rd.m_options ? &*rd.m_options : 0,
+                              levelName, fIds);
+      else
+        xl = scene->loadLevel(actualPath, rd.m_options ? &*rd.m_options : 0);
+      if (!xl) {
+        error("Failed to create level " + toQString(actualPath) +
+              " : this filetype is not supported.");
+        return 0;
+      }
+
+      TXshSimpleLevel *sl = xl->getSimpleLevel();
+      if (sl && sl->isReadOnly() &&
+          (sl->getType() == PLI_XSHLEVEL || sl->getType() == TZP_XSHLEVEL ||
+           sl->getType() == OVL_XSHLEVEL)) {
+        TLevelSet *levelSet = new TLevelSet;
+        levelSet->insertLevel(sl);
+        VersionControlManager::instance()->setFrameRange(levelSet, true);
+      }
+
+      if (convertingPopup->isVisible()) convertingPopup->hide();
+    } catch (TException &e) {
+      if (convertingPopup->isVisible()) convertingPopup->hide();
+
+      QString msg = QString::fromStdWString(e.getMessage());
+      if (msg == QString("Old 4.1 Palette"))
+        error("It is not possible to load the level " + toQString(actualPath) +
+              " because its version is not supported.");
+      else
+        error(QString::fromStdWString(e.getMessage()));
+
+      return 0;
+    } catch (...) {
+      if (convertingPopup->isVisible()) convertingPopup->hide();
+      error("Unhandled exception encountered");
+      return 0;
+    }
+
+    if (xl->getSimpleLevel() &&
+        xl->getSimpleLevel()->getProperties()->isForbidden()) {
+      error("It is not possible to load the level " + toQString(actualPath) +
+            " because its version is not supported.");
+      scene->getLevelSet()->removeLevel(xl);
+      return 0;
+    }
+
+    if (castFolder != TFilePath())
+      scene->getLevelSet()->moveLevelToFolder(castFolder, xl);
+
+    History::instance()->addItem(actualPath);
+
+    if (row1 == -1 && col1 == -1) {
+      undo = new LoadLevelUndo();
+      undo->setLevel(xl);
+      undo->setLevelSetFolder(castFolder);
+      undo->setIsFirstTime(isFirstTime);
+    }
+  }
+  // if the level can be obtained (from scene cast or file)
+  bool wasColumnEmpty = false;
+  if (xl) {
+    // placing in the xsheet
+    if (expose) {
+      // lo importo nell'xsheet
+      if (!undo) {
+        undo = new LoadLevelUndo();
+        undo->setLevel(xl);
+        undo->setIsFirstTime(isFirstTime);
+      }
+
+      TUndoManager::manager()->beginBlock();
+
+      int levelType = xl->getType();
+      TXshColumn::ColumnType newLevelColumnType =
+          TXshColumn::toColumnType(levelType);
+      bool columnInserted =
+          beforeCellsInsert(scene->getXsheet(), row0, col0, xl->getFrameCount(),
+                            newLevelColumnType);
+
+      scene->getXsheet()->exposeLevel(row0, col0, xl, fIds, xFrom, xTo, step,
+                                      inc, frameCount, doesFileActuallyExist);
+
+      if (frameCount > 0)
+        undo->setCells(scene->getXsheet(), row0, col0, frameCount);
+      else
+        undo->setCells(scene->getXsheet(), row0, col0, xl->getFrameCount());
+      undo->setColumnInserted(columnInserted);
+
+      wasColumnEmpty = columnInserted;
+      if (!wasColumnEmpty) {
+        TXshColumn *column = xsh->getColumn(col0);
+        int r0, r1;
+        column->getRange(r0, r1);
+        if ((r1 - r0 + 1) == xl->getFrameCount()) wasColumnEmpty = true;
+      }
+##### G tool.cpp 
+void TTool::bind(int targetType) {
+  m_targetType = targetType;
+
+  if (!toolTable) toolTable = new ToolTable();
+
+  if (!toolNames) toolNames = new std::set<std::string>();
+
+  std::string name = getName();
+  if (toolNames->count(name) == 0) {
+    toolNames->insert(name);
+
+    // Initialize with the dummy tool
+    toolTable->insert(
+        std::make_pair(std::make_pair(name, ToonzImage), &theDummyTool));
+    toolTable->insert(
+        std::make_pair(std::make_pair(name, VectorImage), &theDummyTool));
+    toolTable->insert(
+        std::make_pair(std::make_pair(name, RasterImage), &theDummyTool));
+    toolTable->insert(
+        std::make_pair(std::make_pair(name, MeshImage), &theDummyTool));
+
+    ToolSelector *toolSelector = new ToolSelector(name);
+    CommandManager::instance()->setHandler(
+        name.c_str(), new CommandHandlerHelper<ToolSelector>(
+                          toolSelector, &ToolSelector::selectTool));
+  }
+
+  if (targetType & ToonzImage)
+    (*toolTable)[std::make_pair(name, ToonzImage)] = this;
+  if (targetType & VectorImage)
+    (*toolTable)[std::make_pair(name, VectorImage)] = this;
+  if (targetType & RasterImage)
+    (*toolTable)[std::make_pair(name, RasterImage)] = this;
+  if (targetType & MeshImage)
+    (*toolTable)[std::make_pair(name, MeshImage)] = this;
+}
+
+//-----------------------------------------------------------------------------
+            }
+        }
+    }
+
+    // If the current tool does not match the current type, check for
+    // a version of the same tool that does
+    {
+      TTool *tool = this;
+
+      if ((levelType == PLI_XSHLEVEL) && !(targetType & VectorImage))
+        tool = TTool::getTool(m_name, VectorImage);
+      else if ((levelType == TZP_XSHLEVEL) && !(targetType & ToonzImage))
+        tool = TTool::getTool(m_name, ToonzImage);
+      else if ((levelType == OVL_XSHLEVEL) && !(targetType & RasterImage))
+        tool = TTool::getTool(m_name, RasterImage);
+      else if ((levelType == MESH_XSHLEVEL) && !(targetType & MeshImage))
+        tool = TTool::getTool(m_name, MeshImage);
+
+      if (tool && tool != this && tool->getTargetType() != TTool::NoTarget)
+        return tool->updateEnabled();
+    }
+  }
+
+  bool filmstrip = m_application->getCurrentFrame()->isEditingLevel();
+
+  /*-- MultiLayerStylePickerONのときは、現状に関わらず使用可能 --*/
+        return (
+            enable(false),
+            QObject::tr("The current tool cannot be used on a Toonz Level."));
+
+      if ((levelType == OVL_XSHLEVEL) && !(targetType & RasterImage))
+        return (
+            enable(false),
+            QObject::tr("The current tool cannot be used on a Raster Level."));
+
+      if ((levelType == MESH_XSHLEVEL) && !(targetType & MeshImage))
+        return (
+            enable(false),
+            QObject::tr("The current tool cannot be used on a Mesh Level."));
+    }
+
+    // Check against impossibly traceable movements on the column
+    if ((levelType & LEVELCOLUMN_XSHLEVEL) && !filmstrip && columnIndex >= 0) {
+      TStageObject *obj =
+          xsh->getStageObject(TStageObjectId::ColumnId(columnIndex));
+      // Test for Mesh-deformed levels
+      const TStageObjectId &parentId = obj->getParent();
+      if (parentId.isColumn() && obj->getParentHandle()[0] != 'H') {
+        TXshCell parentCell       = xsh->getCell(rowIndex, parentId.getIndex());
+        TXshSimpleLevel *parentSl = parentCell.getSimpleLevel();
+        if (!parentCell.getFrameId().isStopFrame() && parentSl &&
+            parentSl->getType() == MESH_XSHLEVEL && m_name != T_Selection)
+          return (
+              enable(false),
+              QObject::tr(
+                  "The current tool cannot be used on a mesh-deformed level"));
+      }
+##### H icongenerator 1440-1460 
+      addTask(id,
+              new VectorImageIconRenderer(id, iconSize, sl, fid, m_settings));
+      break;
+    case TZP_XSHLEVEL:
+      // Yep, we could have rasters, due to a cleanupping process
+      if (status == TXshSimpleLevel::Scanned)
+        addTask(id, new RasterImageIconRenderer(id, iconSize, sl, fid));
+      else
+        addTask(id,
+                new ToonzImageIconRenderer(id, iconSize, sl, fid, m_settings));
+      break;
+    case MESH_XSHLEVEL:
+      addTask(id, new MeshImageIconRenderer(id, iconSize, sl, fid, m_settings));
+      break;
+    default:
+      assert(false);
+      break;
+    }
+
+    m_settings = oldSettings;
+  }
+##### I toonzlib CMakeLists 360-380 
+
+message("subdir: toonzlib")
+message("Bin: " ${CMAKE_CURRENT_BINARY_DIR})
+
+if(GLEW_FOUND)
+    include_directories(${GLEW_INCLUDE_DIRS})
+else()
+    include_directories(${SDKROOT}/glew/glew-1.9.0/include)
+endif()
+
+include_directories(
+    SYSTEM
+)
+include_directories(
+    ../toonzfarm/include
+    ${CMAKE_SOURCE_DIR}/../../thirdparty/tinygltf
+)
+
+if(BUILD_ENV_MSVC)
+    target_link_libraries(toonzlib
+        Qt5::Core Qt5::Gui Qt5::OpenGL Qt5::Script Qt5::Multimedia

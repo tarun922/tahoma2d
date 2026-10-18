@@ -40,6 +40,11 @@ public:
     float weights[4];
   };
 
+  struct Bounds {
+    float min[3];
+    float max[3];
+  };
+
   Ref3dModel();
   ~Ref3dModel();
 
@@ -54,6 +59,7 @@ public:
   const std::vector<Joint> &joints() const { return m_joints; }
   const std::vector<Vertex> &vertices() const { return m_vertices; }
   const std::vector<unsigned int> &indices() const { return m_indices; }
+  const Bounds &bounds() const { return m_bounds; }
   const TFilePath &path() const { return m_path; }
 
   static bool isRef3dExtension(const std::string &ext);
@@ -71,6 +77,7 @@ private:
   std::vector<Joint> m_joints;
   std::vector<Vertex> m_vertices;
   std::vector<unsigned int> m_indices;
+  Bounds m_bounds;
 };
 
 #endif

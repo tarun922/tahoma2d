@@ -1451,6 +1451,8 @@ QPixmap IconGenerator::getIcon(TXshLevel *xl, const TFrameId &fid,
     case MESH_XSHLEVEL:
       addTask(id, new MeshImageIconRenderer(id, iconSize, sl, fid, m_settings));
       break;
+    case REF3D_XSHLEVEL:
+      break;
     default:
       assert(false);
       break;
@@ -1539,6 +1541,8 @@ QPixmap IconGenerator::getSizedIcon(TXshLevel *xl, const TFrameId &fid,
     case MESH_XSHLEVEL:
       addTask(id, new MeshImageIconRenderer(id, iconSize, sl, fid, m_settings));
       break;
+    case REF3D_XSHLEVEL:
+      break;
     default:
       assert(false);
       break;
@@ -1582,6 +1586,9 @@ void IconGenerator::invalidate(TXshLevel *xl, const TFrameId &fid,
       addTask(id, new MeshImageIconRenderer(id, getIconSize(), sl, fid,
                                             m_settings));
       break;
+    case REF3D_XSHLEVEL:
+      removeIcon(id);
+      break;
     default:
       assert(false);
       break;
@@ -1619,6 +1626,9 @@ void IconGenerator::invalidate(TXshLevel *xl, const TFrameId &fid,
     case MESH_XSHLEVEL:
       addTask(id, new MeshImageIconRenderer(id, TDimension(80, 60), sl, fid,
                                             m_settings));
+      break;
+    case REF3D_XSHLEVEL:
+      removeIcon(id);
       break;
     default:
       assert(false);

@@ -1,0 +1,366 @@
+##### 0 git state 
+feature/ref3d-phase1
+c5584b001 analysis of the code
+##### 1 txshleveltypes.h 
+#pragma once
+
+#ifndef TXSHLEVELTYPES_INCLUDED
+#define TXSHLEVELTYPES_INCLUDED
+
+enum TXshLevelType {
+  UNKNOWN_XSHLEVEL     = 0x0,  // Unknown level type
+  NO_XSHLEVEL          = 0x1,  // Empty level type (as in, empty xsheet cells)
+  LEVELCOLUMN_XSHLEVEL = 0x2,  // Xsheet-stackable image level type
+
+  TZI_TYPE   = 0x4,
+  PLI_TYPE   = 0x8,
+  TZP_TYPE   = 0x10,
+  OVL_TYPE   = 0x20,
+  CHILD_TYPE = 0x40,
+
+  FULLCOLOR_TYPE = TZI_TYPE | OVL_TYPE,
+  RASTER_TYPE    = FULLCOLOR_TYPE | TZP_TYPE,
+
+  TZI_XSHLEVEL   = TZI_TYPE | LEVELCOLUMN_XSHLEVEL,  // Scan level
+  PLI_XSHLEVEL   = PLI_TYPE | LEVELCOLUMN_XSHLEVEL,  // ToonzVector
+  TZP_XSHLEVEL   = TZP_TYPE | LEVELCOLUMN_XSHLEVEL,  // ToonzRaster
+  OVL_XSHLEVEL   = OVL_TYPE | LEVELCOLUMN_XSHLEVEL,  // Raster
+  CHILD_XSHLEVEL = CHILD_TYPE | LEVELCOLUMN_XSHLEVEL,
+
+  ZERARYFX_XSHLEVEL = 1 << 7,
+  PLT_XSHLEVEL      = 2 << 7,
+  SND_XSHLEVEL      = 3 << 7,
+  SND_TXT_XSHLEVEL  = 4 << 7,
+  MESH_XSHLEVEL     = 5 << 7,
+  FOLDER_XSHLEVEL   = 6 << 7,
+  PEGBAR_XSHLEVEL   = 7 << 7,
+  REF3D_XSHLEVEL    = (8 << 7) | LEVELCOLUMN_XSHLEVEL  // glTF/GLB pose reference
+};
+
+#endif
+##### 2 tfiletype.h 
+#pragma once
+
+#ifndef TFILETYPE_INCLUDED
+#define TFILETYPE_INCLUDED
+
+//#include "tfilepath.h"
+#include "tcommon.h"
+
+class TFilePath;
+class QString;
+
+#undef DVAPI
+#undef DVVAR
+#ifdef TSYSTEM_EXPORTS
+#define DVAPI DV_EXPORT_API
+#define DVVAR DV_EXPORT_VAR
+#else
+#define DVAPI DV_IMPORT_API
+#define DVVAR DV_IMPORT_VAR
+#endif
+
+namespace TFileType {
+
+enum Type {
+
+  UNKNOW_FILE = 0,
+  LEVEL       = 0x1,
+  SCENE       = 0x1000,
+
+  RASTER_IMAGE  = 0x2,
+  RASTER_LEVEL  = RASTER_IMAGE | LEVEL,
+  VECTOR_IMAGE  = 0x4,
+  VECTOR_LEVEL  = VECTOR_IMAGE | LEVEL,
+  CMAPPED_IMAGE = 0x8,
+  CMAPPED_LEVEL = CMAPPED_IMAGE | LEVEL,
+  MESH_IMAGE    = 0x10,
+  MESH_LEVEL    = MESH_IMAGE | LEVEL,
+  GLTF_IMAGE    = 0x100,
+  GLTF_LEVEL    = GLTF_IMAGE | LEVEL,
+
+  IMAGE = RASTER_IMAGE | VECTOR_IMAGE | CMAPPED_IMAGE | MESH_IMAGE,
+
+  AUDIO_LEVEL   = 0x20 | LEVEL,
+  PALETTE_LEVEL = 0x40 | LEVEL,
+
+  TABSCENE   = 0x2000 | SCENE,
+  TOONZSCENE = 0x4000 | SCENE,
+
+  VIEWABLE = RASTER_IMAGE | VECTOR_IMAGE | CMAPPED_IMAGE
+};
+
+/*!
+   * getInfo() returns the TFileType::Type of the filepath.
+   * e.g. 'a.tif' => RASTER_IMAGE, 'a..tif' => RASTER_LEVEL, 'a.mov' =>
+ * RASTER_LEVEL, 'a.tlv' => CMAPPED_LEVEL, etc.
+   * Note!!: in the current implementation, a.0001.tif => RASTER_LEVEL,
+ * (probably a bad choice: should be RASTER IMAGE)
+   */
+//!
+DVAPI Type getInfo(const TFilePath &fp);
+
+/*!
+   * getInfoFromExtension() returns the TFileType::Type "naturally" associated
+ * to a given type (file extension)
+   * e.g. 'tif' => RASTER_IMAGE, 'mov' => RASTER_LEVEL, 'tlv' => CMAPPED_LEVEL,
+ * etc.
+   */
+//!
+DVAPI Type getInfoFromExtension(const std::string &ext);
+DVAPI Type getInfoFromExtension(const QString &ext);
+
+DVAPI void declare(std::string extension, Type type);
+
+inline bool isResource(Type type) { return (type != UNKNOW_FILE); }
+inline bool isViewable(Type type) { return (type & VIEWABLE) != 0; }
+inline bool isLevel(Type type) { return (type & LEVEL) != 0; }
+inline bool isScene(Type type) { return (type & SCENE) != 0; }
+inline bool isFullColor(Type type) { return (type & RASTER_IMAGE) != 0; }
+inline bool isVector(Type type) { return (type & VECTOR_IMAGE) != 0; }
+
+inline bool isLevelExtension(const std::string &fileExtension) {
+  return (getInfoFromExtension(fileExtension) & LEVEL) != 0;
+}
+inline bool isLevelExtension(const QString &fileExtension) {
+  return (getInfoFromExtension(fileExtension) & LEVEL) != 0;
+}
+
+inline bool isLevelFilePath(const TFilePath &fp) {
+  return (getInfo(fp) & LEVEL) != 0;
+}
+
+}  // namespace
+
+#endif
+##### 3 tiio.cpp declare lines 
+75:  TFileType::declare("pli", TFileType::VECTOR_LEVEL);
+78:  TFileType::declare("svg", TFileType::VECTOR_IMAGE);
+84:  TFileType::declare("tzl", TFileType::RASTER_LEVEL);
+88:  TFileType::declare("tlv", TFileType::CMAPPED_LEVEL);
+95:  TFileType::declare("tzp", TFileType::CMAPPED_IMAGE);
+99:  TFileType::declare("tzu", TFileType::CMAPPED_IMAGE);
+102:  TFileType::declare("tzi", TFileType::RASTER_IMAGE);
+106:  TFileType::declare("plt", TFileType::RASTER_IMAGE);
+111:  TFileType::declare("psd", TFileType::RASTER_LEVEL);
+115:  TFileType::declare("mesh", TFileType::MESH_IMAGE);
+117:  TFileType::declare("glb", TFileType::GLTF_LEVEL);
+118:  TFileType::declare("gltf", TFileType::GLTF_LEVEL);
+120:  TFileType::declare("tpl", TFileType::PALETTE_LEVEL);
+124:  TFileType::declare("png", TFileType::RASTER_IMAGE);
+129:  TFileType::declare("tga", TFileType::RASTER_IMAGE);
+137:  TFileType::declare("tif", TFileType::RASTER_IMAGE);
+142:  TFileType::declare("tiff", TFileType::RASTER_IMAGE);
+148:  TFileType::declare("sgi", TFileType::RASTER_IMAGE);
+153:  TFileType::declare("rgb", TFileType::RASTER_IMAGE);
+157:  TFileType::declare("spritesheet", TFileType::RASTER_LEVEL);
+163:  TFileType::declare("exr", TFileType::RASTER_IMAGE);
+172:      TFileType::declare("webm", TFileType::RASTER_LEVEL);
+178:      TFileType::declare("gif", TFileType::RASTER_LEVEL);
+184:      TFileType::declare("mp4", TFileType::RASTER_LEVEL);
+190:      TFileType::declare("apng", TFileType::RASTER_LEVEL);
+196:      TFileType::declare("mov", TFileType::RASTER_LEVEL);
+201:      TFileType::declare("3gp", TFileType::RASTER_LEVEL);
+204:    TFileType::declare("webp", TFileType::RASTER_LEVEL);
+206:    TFileType::declare("ffvideo", TFileType::RASTER_LEVEL);
+215:  TFileType::declare("avi", TFileType::RASTER_LEVEL);
+##### 4 every MESH_XSHLEVEL in the source tree 
+toonz/sources/include/toonz/txshleveltypes.h:30:  MESH_XSHLEVEL     = 5 << 7,
+toonz/sources/tnztools/plastictool.cpp:1183:      lvl->getLevel()->getType() == MESH_XSHLEVEL &&
+toonz/sources/tnztools/rasterselection.cpp:1506:          parentSl->getType() == MESH_XSHLEVEL)
+toonz/sources/tnztools/strokeselection.cpp:1721:          parentSl->getType() == MESH_XSHLEVEL)
+toonz/sources/tnztools/tool.cpp:1020:      else if ((levelType == MESH_XSHLEVEL) && !(targetType & MeshImage))
+toonz/sources/tnztools/tool.cpp:1139:      if ((levelType == MESH_XSHLEVEL) && !(targetType & MeshImage))
+toonz/sources/tnztools/tool.cpp:1155:            parentSl->getType() == MESH_XSHLEVEL && m_name != T_Selection)
+toonz/sources/toonz/castviewer.cpp:752:    else if (sl->getType() == MESH_XSHLEVEL)
+toonz/sources/toonz/cellselection.cpp:2796:            levelType == MESH_XSHLEVEL || levelType == FOLDER_XSHLEVEL) {
+toonz/sources/toonz/cellselection.cpp:3284:        levelType == MESH_XSHLEVEL || levelType == FOLDER_XSHLEVEL) {
+toonz/sources/toonz/cellselection.cpp:3537:        levelType == MESH_XSHLEVEL || levelType == FOLDER_XSHLEVEL) {
+toonz/sources/toonz/exportpanel.cpp:89:            cells[i].m_level->getType() == MESH_XSHLEVEL) {
+toonz/sources/toonz/filmstrip.cpp:1903:      if (type < 0 || type > MESH_XSHLEVEL) break;
+toonz/sources/toonz/filmstripselection.cpp:59:      (type == PLI_XSHLEVEL || type == TZP_XSHLEVEL || type == MESH_XSHLEVEL ||
+toonz/sources/toonz/filmstripselection.cpp:87:    if (type != MESH_XSHLEVEL) {
+toonz/sources/toonz/levelsettingspopup.cpp:704:  case MESH_XSHLEVEL:
+toonz/sources/toonz/meshifypopup.cpp:346:        scene->createNewLevel(MESH_XSHLEVEL, levelName));
+toonz/sources/toonz/meshifypopup.cpp:417:      if (ml && ml->getType() == MESH_XSHLEVEL) {
+toonz/sources/toonz/meshifypopup.cpp:751:  if (sl && sl->getType() == MESH_XSHLEVEL) {
+toonz/sources/toonz/meshifypopup.cpp:1112:      if (!ml || ml->getType() != MESH_XSHLEVEL) continue;
+toonz/sources/toonz/tapp.cpp:351:    case MESH_XSHLEVEL:
+toonz/sources/toonz/toolbar.cpp:135:  case MESH_XSHLEVEL:
+toonz/sources/toonz/xsheetviewer.cpp:117:    case MESH_XSHLEVEL:
+toonz/sources/toonzlib/imagebuilders.cpp:193:  if (sl->getType() == PLI_XSHLEVEL || sl->getType() == MESH_XSHLEVEL)
+toonz/sources/toonzlib/plasticdeformerfx.cpp:200:  if (!texSl || texSl->getType() == MESH_XSHLEVEL) return false;
+toonz/sources/toonzlib/plasticdeformerfx.cpp:281:  if (!meshSl || meshSl->getType() != MESH_XSHLEVEL) return;
+toonz/sources/toonzlib/plasticdeformerfx.cpp:499:  if (!meshSl || meshSl->getType() != MESH_XSHLEVEL) return;
+toonz/sources/toonzlib/scenefx.cpp:755:    if (sd && parentSl && (parentSl->getType() == MESH_XSHLEVEL)) {
+toonz/sources/toonzlib/stagevisitor.cpp:1506:      return sl && (sl->getType() == MESH_XSHLEVEL);
+toonz/sources/toonzlib/toonzscene.cpp:1069:    ret.m_ltype = MESH_XSHLEVEL;
+toonz/sources/toonzlib/txshcolumn.cpp:685:  else if (levelType == MESH_XSHLEVEL)
+toonz/sources/toonzlib/txsheet.cpp:351:    else if (levelType == MESH_XSHLEVEL)
+toonz/sources/toonzlib/txsheet.cpp:439:    else if (levelType == MESH_XSHLEVEL)
+toonz/sources/toonzlib/txshmeshcolumn.cpp:67:  return cell.isEmpty() || (sl && sl->getType() == MESH_XSHLEVEL);
+toonz/sources/toonzlib/txshsimplelevel.cpp:1082:      type = MESH_XSHLEVEL;
+toonz/sources/toonzlib/txshsimplelevel.cpp:1770:        if (getType() != MESH_XSHLEVEL && imageInfo) {
+toonz/sources/toonzlib/txshsimplelevel.cpp:2145:  case MESH_XSHLEVEL:
+toonz/sources/toonzlib/txshsimplelevel.cpp:2527:  case MESH_XSHLEVEL: {
+toonz/sources/toonzlib/txshsimplelevel.cpp:2568:      getType() == MESH_XSHLEVEL) {
+toonz/sources/toonzqt/icongenerator.cpp:1451:    case MESH_XSHLEVEL:
+toonz/sources/toonzqt/icongenerator.cpp:1539:    case MESH_XSHLEVEL:
+toonz/sources/toonzqt/icongenerator.cpp:1581:    case MESH_XSHLEVEL:
+toonz/sources/toonzqt/icongenerator.cpp:1619:    case MESH_XSHLEVEL:
+toonz/sources/toonzqt/schematicviewer.cpp:965:  case MESH_XSHLEVEL:
+##### 5 toonzscene.cpp functions 
+74:std::string getFolderName(int levelType) {
+914:TXshLevel *ToonzScene::createNewLevel(int type, std::wstring levelName,
+937:        if (fp.isEmpty()) fp = getDefaultLevelPath(type, levelName);
+1026:static LevelType getLevelType(const TFilePath &fp) {
+1080:TFilePath ToonzScene::getImportedLevelPath(const TFilePath path) const {
+1086:  const LevelType &ltype = getLevelType(path);
+1093:      getDefaultLevelPath(ltype.m_ltype, levelName).getParentDir() +
+1110:  LevelType ltype = getLevelType(levelPath);
+1174:TXshLevel *ToonzScene::loadLevel(const TFilePath &actualPath,
+1178:  LevelType ltype = getLevelType(actualPath);
+1412:      TFilePath folderName("+" + project->getFolderName(i));
+1442:TFilePath ToonzScene::getDefaultLevelPath(int levelType,
+1469:  std::string folderName = getFolderName(levelType);
+1531:    if (project->getFolderName(i) == "scenes") continue;
+1534:        decodeFilePath(TFilePath("+" + project->getFolderName(i)));
+##### 6 txshsimplelevel.h 
+61:class DVAPI TXshSimpleLevel final : public TXshLevel {
+101:    return getType() == OVL_XSHLEVEL && m_16BitChannelLevel;
+104:    m_16BitChannelLevel = (value && getType() == OVL_XSHLEVEL);
+107:    return getType() == OVL_XSHLEVEL && m_floatChannelLevel;
+110:    m_floatChannelLevel = (value && getType() == OVL_XSHLEVEL);
+##### 7 txshsimplelevel.cpp 
+228:    TLevelReaderP lr(dstPath);
+252:    if (is.matchTag(tagName) && tagName == "hooks") tempHookSet->loadData(is);
+930:void TXshSimpleLevel::loadData(TIStream &is) {
+1033:        throw TException("unexpected tag " + tagName);
+1169:void TXshSimpleLevel::load() {
+1188:      TLevelReaderP lr(path);
+1205:      TLevelReaderP lr(path);
+1239:    TLevelReaderP lr(path);  // May throw
+1326:      TLevelReaderP lr(refImgPath);
+1380:      if (is.matchTag(tagName) && tagName == "hooks") hookSet->loadData(is);
+1389:void TXshSimpleLevel::load(const std::vector<TFrameId> &fIds) {
+1400:  TLevelReaderP lr(path);
+1471:void TXshSimpleLevel::saveData(TOStream &os) {
+1546:void TXshSimpleLevel::save() {
+1610:void TXshSimpleLevel::save(const TFilePath &fp, const TFilePath &oldFp,
+1707:        copyFiles(dDstPath, dSrcPath);
+1763:      TLevelReaderP lr(decodedFp);
+1773:          lr        = TLevelReaderP();
+1796:        TLevelWriterP lw;
+1798:          lw = TLevelWriterP(decodedFp);
+1874:        lw = TLevelWriterP();  // TLevelWriterP's destructor saves the palette
+1976:    hookSet->saveData(os);
+2128:TImageP TXshSimpleLevel::createEmptyFrame() {
+2335:void TXshSimpleLevel::copyFiles(const TFilePath &dst, const TFilePath &src) {
+2520:TRectD TXshSimpleLevel::getBBox(const TFrameId &fid) const {
+2532:    bbox = img->getBBox();
+##### 8 iocommand.cpp 
+927:// loadLevel(scene, path, castFolder, row, col)
+932:TXshLevel *loadLevel(ToonzScene *scene,
+972:        xl = scene->loadLevel(actualPath, rd.m_options ? &*rd.m_options : 0,
+975:        xl = scene->loadLevel(actualPath, rd.m_options ? &*rd.m_options : 0);
+1050:      scene->getXsheet()->exposeLevel(row0, col0, xl, fIds, xFrom, xTo, step,
+1110:             : loadLevel(scene, actualRd, castFolder, row0, col0, row1, col1,
+1207:      frameCount = xsh->exposeLevel(m_row, m_col, m_sl.getPointer());
+2456:        childXsh->exposeLevel(0, subCol0, xl);
+2528:          childXsh->exposeLevel(0, subCol0, xl);
+2848:// IoCmd::exposeLevel(simpleLevel, row, col)
+2851:bool IoCmd::exposeLevel(TXshSimpleLevel *sl, int row, int col, bool insert,
+2858:  return exposeLevel(sl, row, col, fids, insert, overWrite);
+2862:// IoCmd::exposeLevel(simpleLevel, row, col)
+2865:bool IoCmd::exposeLevel(TXshSimpleLevel *sl, int row, int col,
+2884:  xsh->exposeLevel(row, col, sl, fids, overWrite);
+2970:  if (!IoCmd::exposeLevel(loadedLevel->getSimpleLevel(), row, col, fids)) {
+##### 9 tool.h ToolTargetType 
+289:  enum ToolTargetType  //!  Object types the tool can operate on.
+290-  { NoTarget    = 0x0,
+291-    VectorImage = 0x1,   //!< Will work on vector images
+292-    ToonzImage  = 0x2,   //!< Will work on colormap (tlv) images
+293-    RasterImage = 0x4,   //!< Will work on fullcolor images
+294-    MeshImage   = 0x8,   //!< Will work on mesh images
+295-    Splines     = 0x10,  //!< Will work on motion paths
+296-
+297-    LevelColumns = 0x20,  //!< Will work on level columns
+298-    MeshColumns  = 0x40,  //!< Will work on mesh columns
+299-
+300-    EmptyTarget = 0x80,  //!< Will work on empty cells/columns
+301-
+302-    CommonImages = VectorImage | ToonzImage | RasterImage,
+303-    AllImages    = CommonImages | MeshImage,
+304-    Vectors      = VectorImage | Splines,
+305-
+306-    CommonLevels = CommonImages | LevelColumns,
+307-    MeshLevels   = MeshImage | MeshColumns,
+308-
+309-    AllTargets = 0xffffffff,
+310-  };
+311-
+312-public:
+313-  static TTool *getTool(std::string toolName, ToolTargetType targetType);
+314-
+##### 10 tool.cpp 
+198:void TTool::bind(int targetType) {
+217:        std::make_pair(std::make_pair(name, MeshImage), &theDummyTool));
+231:  if (targetType & MeshImage)
+232:    (*toolTable)[std::make_pair(name, MeshImage)] = this;
+938:QString TTool::updateEnabled() {
+942:  return updateEnabled(rowIndex, columnIndex);
+945:// See the overridden function EditTool::updateEnabled() for the Animate Tool
+946:QString TTool::updateEnabled(int rowIndex, int columnIndex) {
+986:      if (tool && tool != this) return tool->updateEnabled();
+1020:      else if ((levelType == MESH_XSHLEVEL) && !(targetType & MeshImage))
+1021:        tool = TTool::getTool(m_name, MeshImage);
+1024:        return tool->updateEnabled();
+1139:      if ((levelType == MESH_XSHLEVEL) && !(targetType & MeshImage))
+1155:            parentSl->getType() == MESH_XSHLEVEL && m_name != T_Selection)
+##### 11 icongenerator.cpp 
+1451:    case MESH_XSHLEVEL:
+1455:      assert(false);
+1539:    case MESH_XSHLEVEL:
+1543:      assert(false);
+1581:    case MESH_XSHLEVEL:
+1586:      assert(false);
+1619:    case MESH_XSHLEVEL:
+1624:      assert(false);
+##### 12 thirdparty folder 
+boost
+canon
+freeglut
+glew
+kiss_fft
+libgphoto2
+libjpeg-turbo
+libmypaint
+libpng-1.6.21
+Lz4
+lzo
+openblas
+superlu
+tiff-4.2.0
+tinyexr
+tinygltf
+zlib-1.2.8
+D:\ctx_tahoma\tahoma2d\thirdparty\tinygltf\json.hpp
+##### 13 toonzlib CMakeLists 
+31:    ../include/toonz/txshsimplelevel.h
+37:set(HEADERS
+174:set(SOURCES
+283:    txshsimplelevel.cpp
+340:    set(SOURCES ${SOURCES}
+365:    include_directories(${GLEW_INCLUDE_DIRS})
+367:    include_directories(${SDKROOT}/glew/glew-1.9.0/include)
+370:include_directories(
+373:include_directories(
+##### 14 docs folder 
+CODEBASE_HOOKS.md
+DO_NOT_TOUCH.md
+FILEMAP.md
+FINAL_CHECKLIST.md
+PERFORMANCE.md
+PHASES.md
+README.md
+SYNC_SAVE_KEYFRAME.md

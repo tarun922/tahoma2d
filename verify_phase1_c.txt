@@ -1,0 +1,1365 @@
+##### A git diff 
+diff --git a/toonz/sources/image/tiio.cpp b/toonz/sources/image/tiio.cpp
+index fd74a3092..9dac682a7 100644
+--- a/toonz/sources/image/tiio.cpp
++++ b/toonz/sources/image/tiio.cpp
+@@ -114,6 +114,9 @@ void initImageIo(bool lightVersion) {
+   TLevelReader::define("mesh", TLevelReaderMesh::create);
+   TFileType::declare("mesh", TFileType::MESH_IMAGE);
+ 
++  TFileType::declare("glb", TFileType::GLTF_LEVEL);
++  TFileType::declare("gltf", TFileType::GLTF_LEVEL);
++
+   TFileType::declare("tpl", TFileType::PALETTE_LEVEL);
+ 
+   Tiio::defineReaderMaker("png", Tiio::makePngReader);
+diff --git a/toonz/sources/include/tfiletype.h b/toonz/sources/include/tfiletype.h
+index cc3d928a9..7c85ec38a 100644
+--- a/toonz/sources/include/tfiletype.h
++++ b/toonz/sources/include/tfiletype.h
+@@ -35,6 +35,8 @@ enum Type {
+   CMAPPED_LEVEL = CMAPPED_IMAGE | LEVEL,
+   MESH_IMAGE    = 0x10,
+   MESH_LEVEL    = MESH_IMAGE | LEVEL,
++  GLTF_IMAGE    = 0x100,
++  GLTF_LEVEL    = GLTF_IMAGE | LEVEL,
+ 
+   IMAGE = RASTER_IMAGE | VECTOR_IMAGE | CMAPPED_IMAGE | MESH_IMAGE,
+ 
+diff --git a/toonz/sources/include/toonz/txshleveltypes.h b/toonz/sources/include/toonz/txshleveltypes.h
+index cf4f1c65c..3c188ac63 100644
+--- a/toonz/sources/include/toonz/txshleveltypes.h
++++ b/toonz/sources/include/toonz/txshleveltypes.h
+@@ -29,7 +29,8 @@ enum TXshLevelType {
+   SND_TXT_XSHLEVEL  = 4 << 7,
+   MESH_XSHLEVEL     = 5 << 7,
+   FOLDER_XSHLEVEL   = 6 << 7,
+-  PEGBAR_XSHLEVEL   = 7 << 7
++  PEGBAR_XSHLEVEL   = 7 << 7,
++  REF3D_XSHLEVEL    = (8 << 7) | LEVELCOLUMN_XSHLEVEL  // glTF/GLB pose reference
+ };
+ 
+ #endif
+diff --git a/toonz/sources/toonzlib/CMakeLists.txt b/toonz/sources/toonzlib/CMakeLists.txt
+index 119cc83fe..aed929b8c 100644
+--- a/toonz/sources/toonzlib/CMakeLists.txt
++++ b/toonz/sources/toonzlib/CMakeLists.txt
+@@ -168,6 +168,7 @@ set(HEADERS
+     ../include/toonz/filepathproperties.h
+     ../include/toonz/navigationtags.h
+     ../include/toonz/txshfoldercolumn.h
++    ../include/toonz/ref3dmodel.h
+ )
+ 
+ set(SOURCES
+@@ -212,6 +213,7 @@ set(SOURCES
+     outputproperties.cpp
+     preferences.cpp
+     rasterbrush.cpp
++    ref3dmodel.cpp
+     rasterstrokegenerator.cpp
+     scenefx.cpp
+     sceneproperties.cpp
+@@ -370,6 +372,7 @@ include_directories(
+ )
+ include_directories(
+     ../toonzfarm/include
++    ${CMAKE_SOURCE_DIR}/../../thirdparty/tinygltf
+ )
+ 
+ if(BUILD_ENV_MSVC)
+##### B ref3dmodel.h 
+#pragma once
+
+#ifndef REF3DMODEL_INCLUDED
+#define REF3DMODEL_INCLUDED
+
+#include "tcommon.h"
+#include "tfilepath.h"
+#include "tgeometry.h"
+
+#include <memory>
+#include <string>
+#include <vector>
+
+#undef DVAPI
+#undef DVVAR
+#ifdef TOONZLIB_EXPORTS
+#define DVAPI DV_EXPORT_API
+#define DVVAR DV_EXPORT_VAR
+#else
+#define DVAPI DV_IMPORT_API
+#define DVVAR DV_IMPORT_VAR
+#endif
+
+//! CPU-side glTF 2.0 model: rest-pose mesh + skeleton.
+//! No OpenGL, no textures, no animation-clip playback.
+class DVAPI Ref3dModel {
+public:
+  struct Joint {
+    std::string name;
+    int parent;  //!< Index in joints[], or -1
+    int node;    //!< glTF node index
+    double inverseBind[16];
+    double restLocal[16];
+  };
+
+  struct Vertex {
+    float px, py, pz;
+    float nx, ny, nz;
+    unsigned short joints[4];
+    float weights[4];
+  };
+
+  Ref3dModel();
+  ~Ref3dModel();
+
+  //! Returns false on failure. Does not throw.
+  bool load(const TFilePath &fp, std::string *err = 0);
+
+  int skinCount() const { return m_skinCount; }
+  int jointCount() const { return (int)m_joints.size(); }
+  int vertexCount() const { return (int)m_vertices.size(); }
+  int triangleCount() const { return (int)m_indices.size() / 3; }
+
+  const std::vector<Joint> &joints() const { return m_joints; }
+  const std::vector<Vertex> &vertices() const { return m_vertices; }
+  const std::vector<unsigned int> &indices() const { return m_indices; }
+  const TFilePath &path() const { return m_path; }
+
+  static bool isRef3dExtension(const std::string &ext);
+  static std::shared_ptr<Ref3dModel> loadCached(const TFilePath &fp,
+                                                std::string *err = 0);
+  static void dropCached(const TFilePath &fp);
+
+  //! Load glTF into a simple level: one empty fid, no TImage, no throw.
+  static bool loadIntoLevel(class TXshSimpleLevel *sl, const TFilePath &fp,
+                            std::string *err = 0);
+
+private:
+  TFilePath m_path;
+  int m_skinCount;
+  std::vector<Joint> m_joints;
+  std::vector<Vertex> m_vertices;
+  std::vector<unsigned int> m_indices;
+};
+
+#endif
+##### C ref3dmodel.cpp 
+#define TINYGLTF_IMPLEMENTATION
+#define TINYGLTF_NO_STB_IMAGE
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+#define TINYGLTF_NO_EXTERNAL_IMAGE
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4018 4100 4189 4244 4267 4996)
+#endif
+
+#include "tiny_gltf.h"
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
+#include "toonz/ref3dmodel.h"
+#include "toonz/tlog.h"
+#include "toonz/txshsimplelevel.h"
+#include "toonz/levelproperties.h"
+#include "timage.h"
+
+#include <QFile>
+#include <QFileInfo>
+#include <QDir>
+#include <cstring>
+#include <map>
+#include <mutex>
+#include <cmath>
+
+namespace {
+
+std::mutex g_cacheMutex;
+std::map<QString, std::shared_ptr<Ref3dModel>> g_cache;
+
+void identity4(double *m) {
+  for (int i = 0; i < 16; ++i) m[i] = 0.0;
+  m[0] = m[5] = m[10] = m[15] = 1.0;
+}
+
+void mul4(double *out, const double *a, const double *b) {
+  double t[16];
+  for (int c = 0; c < 4; ++c)
+    for (int r = 0; r < 4; ++r)
+      t[c * 4 + r] = a[0 * 4 + r] * b[c * 4 + 0] + a[1 * 4 + r] * b[c * 4 + 1] +
+                     a[2 * 4 + r] * b[c * 4 + 2] + a[3 * 4 + r] * b[c * 4 + 3];
+  for (int i = 0; i < 16; ++i) out[i] = t[i];
+}
+
+void nodeLocalMatrix(const tinygltf::Node &n, double *m) {
+  if (n.matrix.size() == 16) {
+    for (int i = 0; i < 16; ++i) m[i] = n.matrix[i];
+    return;
+  }
+  double T[16], R[16], S[16];
+  identity4(T);
+  identity4(R);
+  identity4(S);
+  if (n.translation.size() == 3) {
+    T[12] = n.translation[0];
+    T[13] = n.translation[1];
+    T[14] = n.translation[2];
+  }
+  if (n.scale.size() == 3) {
+    S[0]  = n.scale[0];
+    S[5]  = n.scale[1];
+    S[10] = n.scale[2];
+  }
+  if (n.rotation.size() == 4) {
+    const double x = n.rotation[0], y = n.rotation[1], z = n.rotation[2],
+                 w = n.rotation[3];
+    const double xx = x * x, yy = y * y, zz = z * z;
+    const double xy = x * y, xz = x * z, yz = y * z;
+    const double wx = w * x, wy = w * y, wz = w * z;
+    R[0]  = 1.0 - 2.0 * (yy + zz);
+    R[1]  = 2.0 * (xy + wz);
+    R[2]  = 2.0 * (xz - wy);
+    R[4]  = 2.0 * (xy - wz);
+    R[5]  = 1.0 - 2.0 * (xx + zz);
+    R[6]  = 2.0 * (yz + wx);
+    R[8]  = 2.0 * (xz + wy);
+    R[9]  = 2.0 * (yz - wx);
+    R[10] = 1.0 - 2.0 * (xx + yy);
+  }
+  double RS[16];
+  mul4(RS, R, S);
+  mul4(m, T, RS);
+}
+
+const unsigned char *accessorBytes(const tinygltf::Model &model,
+                                   const tinygltf::Accessor &acc,
+                                   size_t &stride, size_t &count) {
+  if (acc.bufferView < 0 ||
+      acc.bufferView >= (int)model.bufferViews.size())
+    return 0;
+  const tinygltf::BufferView &bv = model.bufferViews[acc.bufferView];
+  if (bv.buffer < 0 || bv.buffer >= (int)model.buffers.size()) return 0;
+  const tinygltf::Buffer &buf = model.buffers[bv.buffer];
+  const size_t offset         = bv.byteOffset + acc.byteOffset;
+  if (offset >= buf.data.size()) return 0;
+  count  = acc.count;
+  stride = acc.ByteStride(bv);
+  if (stride == 0) return 0;
+  return buf.data.data() + offset;
+}
+
+template <typename T>
+T readLE(const unsigned char *p) {
+  T v;
+  memcpy(&v, p, sizeof(T));
+  return v;
+}
+
+bool readFloat3(const tinygltf::Model &model, int accessor, size_t i, float *xyz) {
+  if (accessor < 0) return false;
+  const tinygltf::Accessor &acc = model.accessors[accessor];
+  size_t stride = 0, count = 0;
+  const unsigned char *base = accessorBytes(model, acc, stride, count);
+  if (!base || i >= count) return false;
+  const unsigned char *p = base + i * stride;
+  if (acc.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT) {
+    xyz[0] = readLE<float>(p);
+    xyz[1] = readLE<float>(p + 4);
+    xyz[2] = readLE<float>(p + 8);
+    return true;
+  }
+  return false;
+}
+
+bool readVec4U16(const tinygltf::Model &model, int accessor, size_t i,
+                 unsigned short *out) {
+  if (accessor < 0) return false;
+  const tinygltf::Accessor &acc = model.accessors[accessor];
+  size_t stride = 0, count = 0;
+  const unsigned char *base = accessorBytes(model, acc, stride, count);
+  if (!base || i >= count) return false;
+  const unsigned char *p = base + i * stride;
+  if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
+    for (int k = 0; k < 4; ++k) out[k] = readLE<unsigned short>(p + k * 2);
+    return true;
+  }
+  if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
+    for (int k = 0; k < 4; ++k) out[k] = p[k];
+    return true;
+  }
+  return false;
+}
+
+bool readVec4F(const tinygltf::Model &model, int accessor, size_t i, float *out) {
+  if (accessor < 0) return false;
+  const tinygltf::Accessor &acc = model.accessors[accessor];
+  size_t stride = 0, count = 0;
+  const unsigned char *base = accessorBytes(model, acc, stride, count);
+  if (!base || i >= count) return false;
+  const unsigned char *p = base + i * stride;
+  if (acc.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT) {
+    for (int k = 0; k < 4; ++k) out[k] = readLE<float>(p + k * 4);
+    return true;
+  }
+  return false;
+}
+
+bool readIndex(const tinygltf::Model &model, const tinygltf::Accessor &acc,
+               size_t i, unsigned int &out) {
+  size_t stride = 0, count = 0;
+  const unsigned char *base = accessorBytes(model, acc, stride, count);
+  if (!base || i >= count) return false;
+  const unsigned char *p = base + i * stride;
+  if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
+    out = readLE<unsigned int>(p);
+  else if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+    out = readLE<unsigned short>(p);
+  else if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
+    out = *p;
+  else
+    return false;
+  return true;
+}
+
+void appendPrimitive(const tinygltf::Model &model,
+                     const tinygltf::Primitive &prim,
+                     std::vector<Ref3dModel::Vertex> &verts,
+                     std::vector<unsigned int> &indices) {
+  auto itPos = prim.attributes.find("POSITION");
+  if (itPos == prim.attributes.end()) return;
+  const int posAcc = itPos->second;
+  if (posAcc < 0 || posAcc >= (int)model.accessors.size()) return;
+  const size_t n = model.accessors[posAcc].count;
+
+  int nrmAcc = -1, jntAcc = -1, wgtAcc = -1;
+  auto itN = prim.attributes.find("NORMAL");
+  if (itN != prim.attributes.end()) nrmAcc = itN->second;
+  auto itJ = prim.attributes.find("JOINTS_0");
+  if (itJ != prim.attributes.end()) jntAcc = itJ->second;
+  auto itW = prim.attributes.find("WEIGHTS_0");
+  if (itW != prim.attributes.end()) wgtAcc = itW->second;
+
+  const unsigned int base = (unsigned int)verts.size();
+  verts.reserve(verts.size() + n);
+  for (size_t i = 0; i < n; ++i) {
+    Ref3dModel::Vertex v;
+    memset(&v, 0, sizeof(v));
+    float p[3] = {0, 0, 0};
+    readFloat3(model, posAcc, i, p);
+    v.px = p[0];
+    v.py = p[1];
+    v.pz = p[2];
+    float nn[3] = {0, 1, 0};
+    if (nrmAcc >= 0) readFloat3(model, nrmAcc, i, nn);
+    v.nx = nn[0];
+    v.ny = nn[1];
+    v.nz = nn[2];
+    v.joints[0] = v.joints[1] = v.joints[2] = v.joints[3] = 0;
+    v.weights[0]                                          = 1.f;
+    v.weights[1] = v.weights[2] = v.weights[3] = 0.f;
+    if (jntAcc >= 0) readVec4U16(model, jntAcc, i, v.joints);
+    if (wgtAcc >= 0) readVec4F(model, wgtAcc, i, v.weights);
+    verts.push_back(v);
+  }
+
+  std::vector<unsigned int> primIdx;
+  if (prim.indices >= 0 && prim.indices < (int)model.accessors.size()) {
+    const tinygltf::Accessor &acc = model.accessors[prim.indices];
+    primIdx.resize(acc.count);
+    for (size_t i = 0; i < acc.count; ++i) {
+      unsigned int id = 0;
+      if (!readIndex(model, acc, i, id)) id = 0;
+      primIdx[i] = base + id;
+    }
+  } else {
+    primIdx.resize(n);
+    for (size_t i = 0; i < n; ++i) primIdx[i] = base + (unsigned int)i;
+  }
+
+  const int mode =
+      (prim.mode < 0) ? TINYGLTF_MODE_TRIANGLES : prim.mode;
+  if (mode == TINYGLTF_MODE_TRIANGLES) {
+    const size_t tcount = (primIdx.size() / 3) * 3;
+    indices.insert(indices.end(), primIdx.begin(), primIdx.begin() + tcount);
+  } else if (mode == TINYGLTF_MODE_TRIANGLE_STRIP && primIdx.size() >= 3) {
+    for (size_t i = 0; i + 2 < primIdx.size(); ++i) {
+      if (i & 1) {
+        indices.push_back(primIdx[i]);
+        indices.push_back(primIdx[i + 2]);
+        indices.push_back(primIdx[i + 1]);
+      } else {
+        indices.push_back(primIdx[i]);
+        indices.push_back(primIdx[i + 1]);
+        indices.push_back(primIdx[i + 2]);
+      }
+    }
+  } else if (mode == TINYGLTF_MODE_TRIANGLE_FAN && primIdx.size() >= 3) {
+    for (size_t i = 1; i + 1 < primIdx.size(); ++i) {
+      indices.push_back(primIdx[0]);
+      indices.push_back(primIdx[i]);
+      indices.push_back(primIdx[i + 1]);
+    }
+  }
+}
+
+bool skipImage(tinygltf::Image *image, const int, std::string *, std::string *,
+               int, int, const unsigned char *, int, void *) {
+  image->width      = 1;
+  image->height     = 1;
+  image->component  = 4;
+  image->bits       = 8;
+  image->pixel_type = TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE;
+  image->image.assign(4, 0);
+  return true;
+}
+
+}  // namespace
+
+//-----------------------------------------------------------------------------
+
+Ref3dModel::Ref3dModel() : m_skinCount(0) {}
+
+Ref3dModel::~Ref3dModel() {}
+
+bool Ref3dModel::isRef3dExtension(const std::string &ext) {
+  return ext == "glb" || ext == "gltf" || ext == "GLB" || ext == "GLTF";
+}
+
+bool Ref3dModel::load(const TFilePath &fp, std::string *err) {
+  m_path = fp;
+  m_skinCount = 0;
+  m_joints.clear();
+  m_vertices.clear();
+  m_indices.clear();
+
+  const QString qpath = fp.getQString();
+  QFile file(qpath);
+  if (!file.open(QIODevice::ReadOnly)) {
+    if (err) *err = "Cannot open " + qpath.toStdString();
+    return false;
+  }
+  const QByteArray bytes = file.readAll();
+  file.close();
+  if (bytes.isEmpty()) {
+    if (err) *err = "Empty file " + qpath.toStdString();
+    return false;
+  }
+
+  tinygltf::TinyGLTF loader;
+  loader.SetImageLoader(skipImage, 0);
+  tinygltf::Model model;
+  std::string loadErr, loadWarn;
+  const std::string ext  = fp.getType();
+  const QString baseDir  = QFileInfo(qpath).absolutePath();
+  const std::string base = baseDir.toUtf8().constData();
+  bool ok                = false;
+  if (ext == "glb" || ext == "GLB") {
+    ok = loader.LoadBinaryFromMemory(
+        &model, &loadErr, &loadWarn,
+        reinterpret_cast<const unsigned char *>(bytes.constData()),
+        (unsigned int)bytes.size(), base);
+  } else {
+    const std::string json = std::string(bytes.constData(), bytes.size());
+    ok = loader.LoadASCIIFromString(&model, &loadErr, &loadWarn, json.c_str(),
+                                    (unsigned int)json.size(), base);
+  }
+  if (!ok) {
+    if (err) *err = loadErr.empty() ? "tinygltf failed" : loadErr;
+    return false;
+  }
+
+  m_skinCount = (int)model.skins.size();
+
+  // Prefer the first skin; still keep unskinned meshes if there is no skin.
+  std::map<int, int> nodeToJoint;
+  if (!model.skins.empty()) {
+    const tinygltf::Skin &skin = model.skins[0];
+    m_joints.resize(skin.joints.size());
+    std::vector<double> ibm;
+    if (skin.inverseBindMatrices >= 0 &&
+        skin.inverseBindMatrices < (int)model.accessors.size()) {
+      const tinygltf::Accessor &acc =
+          model.accessors[skin.inverseBindMatrices];
+      size_t stride = 0, count = 0;
+      const unsigned char *basePtr = accessorBytes(model, acc, stride, count);
+      ibm.resize(count * 16, 0.0);
+      if (basePtr && acc.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT) {
+        for (size_t i = 0; i < count; ++i) {
+          const unsigned char *p = basePtr + i * stride;
+          for (int k = 0; k < 16; ++k)
+            ibm[i * 16 + k] = readLE<float>(p + k * 4);
+        }
+      }
+    }
+    for (size_t j = 0; j < skin.joints.size(); ++j) {
+      Joint jt;
+      jt.node   = skin.joints[j];
+      jt.parent = -1;
+      identity4(jt.restLocal);
+      identity4(jt.inverseBind);
+      if (j * 16 + 15 < ibm.size())
+        for (int k = 0; k < 16; ++k) jt.inverseBind[k] = ibm[j * 16 + k];
+      if (jt.node >= 0 && jt.node < (int)model.nodes.size()) {
+        jt.name = model.nodes[jt.node].name;
+        nodeLocalMatrix(model.nodes[jt.node], jt.restLocal);
+      }
+      nodeToJoint[jt.node] = (int)j;
+      m_joints[j]          = jt;
+    }
+    for (size_t j = 0; j < m_joints.size(); ++j) {
+      const int node = m_joints[j].node;
+      if (node < 0 || node >= (int)model.nodes.size()) continue;
+      const std::vector<int> &ch = model.nodes[node].children;
+      for (int c : ch) {
+        auto it = nodeToJoint.find(c);
+        if (it != nodeToJoint.end()) m_joints[it->second].parent = (int)j;
+      }
+    }
+  }
+
+  for (const tinygltf::Mesh &mesh : model.meshes)
+    for (const tinygltf::Primitive &prim : mesh.primitives)
+      appendPrimitive(model, prim, m_vertices, m_indices);
+
+  {
+    std::string msg = "Ref3dModel: " + qpath.toStdString() + " skins=" +
+                      std::to_string(m_skinCount) + " joints=" +
+                      std::to_string(jointCount()) + " vertices=" +
+                      std::to_string(vertexCount()) + " triangles=" +
+                      std::to_string(triangleCount());
+    TSysLog::info(msg);
+  }
+  return true;
+}
+
+std::shared_ptr<Ref3dModel> Ref3dModel::loadCached(const TFilePath &fp,
+                                                   std::string *err) {
+  const QString key = QFileInfo(fp.getQString()).absoluteFilePath();
+  {
+    std::lock_guard<std::mutex> lock(g_cacheMutex);
+    auto it = g_cache.find(key);
+    if (it != g_cache.end()) return it->second;
+  }
+  auto model = std::make_shared<Ref3dModel>();
+  if (!model->load(fp, err)) return std::shared_ptr<Ref3dModel>();
+  std::lock_guard<std::mutex> lock(g_cacheMutex);
+  g_cache[key] = model;
+  return model;
+}
+
+void Ref3dModel::dropCached(const TFilePath &fp) {
+  const QString key = QFileInfo(fp.getQString()).absoluteFilePath();
+  std::lock_guard<std::mutex> lock(g_cacheMutex);
+  g_cache.erase(key);
+}
+##### D AI policy PR files 
+fatal: ambiguous argument '3f2dde0af1': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+AGENTS.md
+AI_POLICY.md
+CHANGELOG.md
+CLAUDE.md
+CONTRIBUTING.md
+README.md
+ISSUE_TEMPLATE
+workflows
+##### E toColumnType 
+    return new TXshZeraryFxColumn(0);
+  case ePaletteType:
+    return new TXshPaletteColumn;
+  case eSoundTextType:
+    return new TXshSoundTextColumn;
+  case eMeshType:
+    return new TXshMeshColumn;
+  case eFolderType:
+    return new TXshFolderColumn;
+  }
+
+  assert(type == eLevelType);
+  return new TXshLevelColumn;
+}
+
+//-----------------------------------------------------------------------------
+
+TXshColumn::ColumnType TXshColumn::toColumnType(int levelType) {
+  ColumnType colType = TXshColumn::eLevelType;
+
+  if (levelType & LEVELCOLUMN_XSHLEVEL)
+    colType = TXshColumn::eLevelType;
+  else if (levelType == ZERARYFX_XSHLEVEL)
+    colType = TXshColumn::eZeraryFxType;
+  else if (levelType == PLT_XSHLEVEL)
+    colType = TXshColumn::ePaletteType;
+  else if (levelType == SND_XSHLEVEL)
+    colType = TXshColumn::eSoundType;
+  else if (levelType == SND_TXT_XSHLEVEL)
+    colType = TXshColumn::eSoundTextType;
+  else if (levelType == MESH_XSHLEVEL)
+    colType = TXshColumn::eMeshType;
+  else if (levelType == FOLDER_XSHLEVEL)
+    colType = TXshColumn::eFolderType;
+  else
+    assert(!"Unknown level type!");
+
+  return colType;
+}
+
+//-----------------------------------------------------------------------------
+##### F txsheet column type init 
+
+//-----------------------------------------------------------------------------
+
+bool TXsheet::setCell(int row, int col, const TXshCell &cell) {
+  if (row < 0 || col < 0) return false;
+
+  bool wasColumnEmpty = isColumnEmpty(col);
+  TXshCellColumn *cellColumn;
+  if (!cell.isEmpty()) {
+    TXshLevel *level = cell.m_level.getPointer();
+    assert(level);
+
+    int levelType = level->getType();
+
+    if (levelType == TXshColumn::eFolderType) return false;
+
+    TXshColumn::ColumnType type = TXshColumn::eLevelType;
+
+    if (levelType == SND_XSHLEVEL)
+      type = TXshColumn::eSoundType;
+    else if (levelType == SND_TXT_XSHLEVEL)
+      type = TXshColumn::eSoundTextType;
+    else if (levelType == PLT_XSHLEVEL)
+      type = TXshColumn::ePaletteType;
+    else if (levelType == ZERARYFX_XSHLEVEL)
+      type = TXshColumn::eZeraryFxType;
+    else if (levelType == MESH_XSHLEVEL)
+      type = TXshColumn::eMeshType;
+
+    cellColumn = touchColumn(col, type)->getCellColumn();
+  } else {
+##### G TXshSimpleLevel::setFrame 
+809:void TXshSimpleLevel::setFrame(const TFrameId &fid, const TImageP &img) {
+810-  assert(m_type != UNKNOWN_XSHLEVEL);
+811-
+812-  if (img) img->setPalette(getPalette());
+813-
+814-  m_frames.insert(fid);
+815-
+816-  TFilePath path = m_path;
+817-
+818-  int frameStatus                        = getFrameStatus(fid);
+819-  static const int SCANNED_OR_CLEANUPPED = (Scanned | Cleanupped);
+820-
+821-  if ((frameStatus & SCANNED_OR_CLEANUPPED) == Scanned) path = m_scannedPath;
+822-
+823-  // Deal with the ImageManger: ensure the identifiers are bound, and the
+824-  // associated image is either modified to img or (if !img) invalidated.
+825-  const std::string &imageId = getImageId(fid);
+826-
+827-  if (!ImageManager::instance()->isBound(imageId)) {
+828-    const TFilePath &decodedPath = getScene()->decodeFilePath(path);
+829-    ImageManager::instance()->bind(imageId, new ImageLoader(decodedPath, fid));
+830-  }
+831-
+832-  ImageManager::instance()->setImage(imageId, img);  // Invalidates if !img
+833-
+834-  if (frameStatus == Normal) {
+835-    // Only a normal frame can have these. Justified since:
+836-    //  PLIs have nothing to share with cleanup stuff
+837-
+838-    if (m_type == PLI_XSHLEVEL) {
+839-      const std::string &imageId2 = rasterized(imageId);
+840-      if (!ImageManager::instance()->isBound(imageId2))
+841-        ImageManager::instance()->bind(imageId2, new ImageRasterizer);
+842-      else
+843-        ImageManager::instance()->invalidate(imageId2);
+844-    }
+845-
+846-    if (m_type == OVL_XSHLEVEL || m_type == TZI_XSHLEVEL) {
+847-      const std::string &imageId2 = filled(imageId);
+848-      if (!ImageManager::instance()->isBound(imageId2))
+849-        ImageManager::instance()->bind(imageId2, new ImageFiller);
+850-      else
+851-        ImageManager::instance()->invalidate(imageId2);
+852-    }
+853-  }
+854-}
+--
+2026:void TXshSimpleLevel::setFrameStatus(const TFrameId &fid, int status) {
+2027-  assert((status & ~(Scanned | Cleanupped | CleanupPreview)) == 0);
+2028-  m_framesStatus[fid] = status;
+2029-}
+2030-
+2031-//-----------------------------------------------------------------------------
+2032-/*- CleanupPopup::setCurrentLevel / TCleanupper で使用 -*/
+2033-void TXshSimpleLevel::makeTlv(const TFilePath &tlvPath) {
+2034-  int ltype = getType();
+2035-
+2036-  if (!(ltype & FULLCOLOR_TYPE)) {
+2037-    assert(ltype & FULLCOLOR_TYPE);
+2038-    return;
+2039-  }
+2040-
+2041-  setType(TZP_XSHLEVEL);
+2042-
+2043-  m_scannedPath = m_path;
+2044-
+2045-  assert(tlvPath.getType() == "tlv");
+2046-  m_path = tlvPath;
+2047-
+2048-  FramesSet::const_iterator it;
+2049-  for (it = m_frames.begin(); it != m_frames.end(); ++it) {
+2050-    TFrameId fid = *it;
+2051-    setFrameStatus(fid, Scanned);
+2052-    ImageManager::instance()->rebind(getImageId(fid, Scanned),
+2053-                                     getImageId(fid, 0));
+2054-    ImageManager::instance()->rebind(getIconId(fid, Scanned),
+2055-                                     getIconId(fid, 0));
+2056-  }
+2057-}
+2058-
+2059-//-----------------------------------------------------------------------------
+2060-
+2061-void TXshSimpleLevel::invalidateFrames() {
+2062-  FramesSet::iterator ft, fEnd = m_frames.end();
+2063-  for (ft = m_frames.begin(); ft != fEnd; ++ft)
+2064-    ImageManager::instance()->invalidate(getImageId(*ft));
+2065-}
+2066-
+2067-//-----------------------------------------------------------------------------
+2068-/*- 指定したFIdのみInvalidateする -*/
+2069-void TXshSimpleLevel::invalidateFrame(const TFrameId &fid) {
+2070-  std::string id = getImageId(fid);
+2071-  ImageManager::instance()->invalidate(id);
+##### H load rest 
+                          "Failed to open %1.\nSamples per pixel is more than "
+                          "4. It may contain more than one alpha channel.")
+                          .arg(QString::fromStdWString(m_path.getWideString()));
+        QMessageBox::warning(0, "Image format not supported", msg);
+        return;
+      }
+
+      if (info) {
+        set16BitChannelLevel(info->m_bitsPerSample == 16);
+        setFloatChannelLevel(info->m_bitsPerSample == 32);
+      }
+    }
+    if ((getType() & FULLCOLOR_TYPE) && !is16BitChannelLevel())
+      setPalette(FullColorPalette::instance()->getPalette(getScene()));
+    else
+      setPalette(level->getPalette());
+
+    if (!checkCreatorString(creator = lr->getCreator()))
+      getProperties()->setIsForbidden(true);
+    else
+      for (TLevel::Iterator it = level->begin(); it != level->end(); it++) {
+        m_renumberTable[it->first] = it->first;  // Voglio che la tabella
+                                                 // contenga anche i frame che
+                                                 // non vengono caricati
+        if (!loadingLevelRange.match(it->first)) continue;
+        setFrame(it->first, TImageP());
+      }
+
+    setContentHistory(lr->getContentHistory() ? lr->getContentHistory()->clone()
+                                              : 0);
+  }
+  getProperties()->setCreator(creator.toStdString());
+
+  loadingLevelRange.reset();
+  if (getType() != PLI_XSHLEVEL) {
+    if (m_properties->getImageDpi() == TPointD() && !m_frames.empty()) {
+      TDimension imageRes(0, 0);
+      TPointD imageDpi;
+
+      const TFrameId &firstFid = getFirstFid();
+      std::string imageId      = getImageId(firstFid);
+
+      const TImageInfo *imageInfo =
+          ImageManager::instance()->getInfo(imageId, ImageManager::none, 0);
+      if (imageInfo) {
+        imageRes.lx = imageInfo->m_lx;
+        imageRes.ly = imageInfo->m_ly;
+        imageDpi.x  = imageInfo->m_dpix;
+        imageDpi.y  = imageInfo->m_dpiy;
+        m_properties->setImageDpi(imageDpi);
+        m_properties->setImageRes(imageRes);
+        m_properties->setBpp(imageInfo->m_bitsPerSample *
+                             imageInfo->m_samplePerPixel);
+      }
+    }
+    setRenumberTable();
+  }
+
+  if (getPalette() && StudioPalette::isEnabled())
+    StudioPalette::instance()->updateLinkedColors(getPalette());
+
+  TFilePath refImgName;
+  if (m_palette) {
+    refImgName           = m_palette->getRefImgPath();
+    TFilePath refImgPath = refImgName;
+    if (refImgName != TFilePath() && TFileStatus(refImgPath).doesExist()) {
+      TLevelReaderP lr(refImgPath);
+      if (lr) {
+        TLevelP level = lr->loadInfo();
+        if (level->getFrameCount() > 0) {
+          TImageP img = lr->getFrameReader(level->begin()->first)->load();
+          if (img && getPalette()) {
+            img->setPalette(0);
+            getPalette()->setRefImg(img);
+            std::vector<TFrameId> fids = getPalette()->getRefLevelFids();
+            // in case the fids are specified by user
+            if (fids.size() > 0) {
+              // check existence of each fid
+              auto itr = fids.begin();
+              while (itr != fids.end()) {
+                bool found = false;
+                for (TLevel::Iterator it = level->begin(); it != level->end();
+                     ++it) {
+                  if (itr->getNumber() == it->first.getNumber()) {
+                    found = true;
+                    break;
+                  }
+                }
+                if (!found)  // remove the fid if it does not exist in the level
+                  itr = fids.erase(itr);
+                else
+                  itr++;
+              }
+            }
+            // in case the fids are not specified, or all specified fids are
+            // absent
+            if (fids.size() == 0) {
+              for (TLevel::Iterator it = level->begin(); it != level->end();
+                   ++it)
+                fids.push_back(it->first);
+              getPalette()->setRefLevelFids(fids, false);
+            } else if (fids.size() != getPalette()->getRefLevelFids().size())
+              getPalette()->setRefLevelFids(fids, true);
+          }
+        }
+      }
+    }
+  }
+
+  // Load hooks
+  HookSet *hookSet = getHookSet();
+  hookSet->clearHooks();
+
+  const TFilePath &hookFile =
+      TXshSimpleLevel::getExistingHookFile(getScene()->decodeFilePath(m_path));
+
+  if (!hookFile.isEmpty()) {
+    TIStream is(hookFile);
+    std::string tagName;
+    try {
+      if (is.matchTag(tagName) && tagName == "hooks") hookSet->loadData(is);
+    } catch (...) {
+    }
+  }
+  updateReadOnly();
+}
+
+//-----------------------------------------------------------------------------
+
+void TXshSimpleLevel::load(const std::vector<TFrameId> &fIds) {
+  getProperties()->setCreator("");
+##### I save(fp) rest 
+
+  saveSimpleLevel(dDstPath, overwritePalette);
+}
+
+//-----------------------------------------------------------------------------
+
+void TXshSimpleLevel::saveSimpleLevel(const TFilePath &decodedFp,
+                                      bool overwritePalette) {
+  /* Precondition: Destination level with path decodedFp is supposed to already
+             store those image frames not tagged as 'modified' in this level
+             instance. */
+
+  TFilePath oldPath  = m_path;
+  TFilePath dOldPath = getScene()->decodeFilePath(oldPath);
+
+  // Substitute m_path with decodedFp until the function quits.
+  struct CopyOnExit {
+    TFilePath &m_dstPath, &m_srcPath;
+    ~CopyOnExit() { m_dstPath = m_srcPath; }
+  } copyOnExit = {m_path = decodedFp,
+                  oldPath};  // m_path substituted here until function quits
+
+  bool savingOriginal = (decodedFp == dOldPath), paletteNotSaved = false;
+
+  int imFlags = savingOriginal
+                    ? ImageManager::dontPutInCache | ImageManager::toBeSaved
+                    : ImageManager::dontPutInCache;
+
+  std::vector<TFrameId> fids;
+  getFids(fids);
+
+  bool isLevelModified   = getProperties()->getDirtyFlag();
+  bool isPaletteModified = false;
+  if (getPalette()) isPaletteModified = getPalette()->getDirtyFlag();
+
+  if (isLevelModified || isPaletteModified) {
+    // gmt (8/8/08. provo a risolvere il pasticcio della scrittura dei tlv.
+    // Dobbiamo
+    // ripensarci con piu' calma. Per ora cerco di fare meno danno possibile).
+    TDimension oldRes(0, 0);
+    bool fileOrLevelRemoved = false;
+
+    if (TSystem::doesExistFileOrLevel(decodedFp)) {
+      TLevelReaderP lr(decodedFp);
+      lr->doReadPalette(false);
+      try {
+        const TImageInfo *imageInfo =
+            m_frames.empty() ? lr->getImageInfo()
+                             : lr->getImageInfo(*(m_frames.begin()));
+
+        if (getType() != MESH_XSHLEVEL && imageInfo) {
+          oldRes.lx = imageInfo->m_lx;
+          oldRes.ly = imageInfo->m_ly;
+          lr        = TLevelReaderP();
+          if (getProperties()->getImageRes() != oldRes) {
+            // Il comando canvas size cambia le dimensioni del livello!!!
+            // Se il file già esiste, nel level writer vengono risettate le
+            // dimesnioni del file esistente
+            // e salva male
+            TSystem::removeFileOrLevel(decodedFp);
+            fileOrLevelRemoved = true;
+          }
+        }
+      } catch (...) {
+      }
+    }
+    // overwrite tlv
+    if (decodedFp.getType() == "tlv" &&
+        TSystem::doesExistFileOrLevel(decodedFp)) {
+      if (isLevelModified) {
+        // in questo caso dovrei scrivere solo i frame modificati.
+        // certamente NON DEVO scrivere quelli che non ho (e che dovrei
+        // rileggere dallo stesso file che sto scrivendo
+
+        int oldSubs = getProperties()->getSubsampling();
+
+        TLevelWriterP lw;
+        try {
+          lw = TLevelWriterP(decodedFp);
+        } catch (...) {
+          // revert subsampling
+          m_properties->setSubsampling(oldSubs);
+          m_path = oldPath;
+          throw TSystemException(decodedFp,
+                                 "Can't open file.\nAccess may be denied or \n"
+                                 "someone else may be saving the same file.\n"
+                                 "Please wait and try again.");
+        }
+
+        lw->setOverwritePaletteFlag(overwritePalette);
+
+        lw->setCreator(getCreatorString());
+        lw->setPalette(getPalette());
+
+        // Filter out of the renumber table all non-tlv frames (could happen if
+        // the level
+        // is a scan-cleanup mix). This is fine even on the temporarily
+        // substituted m_path.
+        std::map<TFrameId, TFrameId> renumberTable;
+
+        for (auto it = m_renumberTable.rbegin(); it != m_renumberTable.rend();
+             ++it) {
+          TFrameId id = (*it).first;
+          if ((getFrameStatus(id) != Scanned) &&
+              (getFrameStatus(id) != CleanupPreview)) {
+            renumberTable[id] = (*it).second;
+          }
+        }
+
+        m_renumberTable.clear();
+        m_renumberTable = renumberTable;
+##### J copyFiles 
+void TXshSimpleLevel::copyFiles(const TFilePath &dst, const TFilePath &src) {
+  if (dst == src) return;
+  TSystem::touchParentDir(dst);
+  TSystem::copyFileOrLevel_throw(dst, src);
+  if (dst.getType() == "tlv") {
+    // Copio la palette del livello
+    TFilePath srcPltPath =
+        src.getParentDir() + TFilePath(src.getWideName() + L".tpl");
+    if (TFileStatus(srcPltPath).doesExist())
+      TSystem::copyFile(
+          dst.getParentDir() + TFilePath(dst.getWideName() + L".tpl"),
+          srcPltPath, true);
+  }
+  if (dst.getType() == "tzp" || dst.getType() == "tzu") {
+    // Copio la palette del livello
+    TFilePath srcPltPath =
+        src.getParentDir() + TFilePath(src.getWideName() + L".plt");
+    if (TFileStatus(srcPltPath).doesExist())
+      TSystem::copyFile(
+          dst.getParentDir() + TFilePath(dst.getWideName() + L".plt"),
+          srcPltPath, true);
+  }
+
+  const TFilePath &srcHookFile = TXshSimpleLevel::getExistingHookFile(src);
+  if (!srcHookFile.isEmpty()) {
+    const TFilePath &dstHookFile = getHookPath(dst);
+    TSystem::copyFile(dstHookFile, srcHookFile, true);
+  }
+  TFilePath files = src.getParentDir() + (src.getName() + "_files");
+  if (TFileStatus(files).doesExist() && TFileStatus(files).isDirectory())
+    TSystem::copyDir(dst.getParentDir() + (src.getName() + "_files"), files);
+}
+
+//-----------------------------------------------------------------------------
+
+void TXshSimpleLevel::renameFiles(const TFilePath &dst, const TFilePath &src) {
+  if (dst == src) return;
+  TSystem::touchParentDir(dst);
+  if (TSystem::doesExistFileOrLevel(dst)) TXshSimpleLevel::removeFiles(dst);
+  TSystem::renameFileOrLevel_throw(dst, src);
+  if (dst.getType() == "tlv")
+    TSystem::renameFile(dst.withType("tpl"), src.withType("tpl"));
+
+  const TFilePath &srcHookFile = TXshSimpleLevel::getExistingHookFile(src);
+  if (!srcHookFile.isEmpty()) {
+    const TFilePath &dstHookFile = getHookPath(dst);
+    TSystem::renameFile(dstHookFile, srcHookFile);
+  }
+
+  TFilePath files = src.getParentDir() + (src.getName() + "_files");
+  if (TFileStatus(files).doesExist() && TFileStatus(files).isDirectory())
+    TSystem::renameFile(dst.getParentDir() + (dst.getName() + "_files"), files);
+}
+
+//-----------------------------------------------------------------------------
+
+void TXshSimpleLevel::removeFiles(const TFilePath &fp) {
+  TSystem::moveFileOrLevelToRecycleBin(fp);
+  if (fp.getType() == "tlv") {
+    TFilePath tpl = fp.withType("tpl");
+    if (TFileStatus(tpl).doesExist()) TSystem::moveFileToRecycleBin(tpl);
+  }
+
+  // Delete ALL hook files (ie from every Toonz version)
+  const QStringList &hookFiles = TXshSimpleLevel::getHookFiles(fp);
+
+##### K Player::image 
+##### L ToonzScene::loadLevel rest 
+        TStageObjectId cameraId =
+            getXsheet()->getStageObjectTree()->getCurrentCameraId();
+
+        lp->setDpiPolicy(LevelProperties::DP_CustomDpi);
+        lp->setDpi(getCurrentCamera()->getDpi());
+      } else {
+        // Has dpi alright - assign it to custom dpi, too
+        lp->setDpi(imageDpi);
+      }
+    }
+
+    // for EXR level, set the color space gamma to the same value as the output
+    // settings. skip if the loading gamma is specified in the preferences.
+    if (xl->getType() == OVL_XSHLEVEL && levelPath.getType() == "exr" &&
+        !formatSpecified) {
+      double gamma = getProperties()
+                         ->getOutputProperties()
+                         ->getRenderSettings()
+                         .m_colorSpaceGamma;
+      lp->setColorSpaceGamma(gamma);
+    }
+
+    m_levelSet->insertLevel(xl);
+
+    return xl;
+  }
+
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+
+TFilePath ToonzScene::decodeFilePath(const TFilePath &path) const {
+  auto project = getProject();
+  bool projectIsEmpty = project->getFolderCount() ? false : true;
+  TFilePath fp        = path;
+
+  std::wstring head;
+  TFilePath tail;
+  path.split(head, tail);
+
+  std::string h;
+  std::wstring s;
+  if (head != L"") {
+    // in case of the project folder aliases
+    if (head[0] == L'+') {
+      if (TProjectManager::instance()->isTabModeEnabled()) {
+        return m_scenePath.getParentDir() +
+               (m_scenePath.getWideName() + L"_files") + tail;
+      }
+
+      if (TProjectManager::instance()->isTabKidsModeEnabled()) {
+        return m_scenePath.getParentDir() + m_scenePath.getWideName() + tail;
+      }
+
+      if (projectIsEmpty) {
+        TFilePath dir = m_scenePath.getParentDir();
+        if (dir.getName() == "scenes")
+          return dir.withName(head.substr(1)) + tail;
+        else
+          return dir + tail;
+      }
+      if (project) {
+        h           = ::to_string(head.substr(1));
+        TFilePath f = project->getFolder(h);
+        if (f != TFilePath()) s = f.getWideString();
+      }
+    }
+    // in case of the scene folder alias
+    else if (head == L"$scenefolder") {
+      TFilePath dir = m_scenePath.getParentDir();
+      return dir + tail;
+    }
+  }
+  if (s != L"") {
+    std::map<std::wstring, std::wstring> table;
+##### M iocommand expose rest 
+      }
+    }
+    if (row1 != -1 || col1 != -1)
+      replaceUndo = new LoadAndReplaceLevelUndo(xl->getSimpleLevel(), row0,
+                                                col0, row1, col1);
+  }
+
+  if (undo) TUndoManager::manager()->add(undo);
+
+  if (replaceUndo) TUndoManager::manager()->add(replaceUndo);
+
+  // Column name renamed to level name only if was originally empty
+  if (expose) {
+    if (wasColumnEmpty) {
+      TStageObjectId columnId = TStageObjectId::ColumnId(col0);
+      std::string columnName =
+          QString::fromStdWString(xl->getName()).toStdString();
+      TStageObjectCmd::rename(columnId, columnName,
+                              TApp::instance()->getCurrentXsheet());
+    }
+    TUndoManager::manager()->endBlock();
+  }
+
+  return xl;
+}
+
+//===========================================================================
+// loadResource(scene, path, castFolder, row, col, expose)
+//---------------------------------------------------------------------------
+
+TXshLevel *loadResource(ToonzScene *scene,
+                        const IoCmd::LoadResourceArguments::ResourceData &rd,
+                        const TFilePath &castFolder, int row0, int &col0,
+                        int row1, int &col1, bool expose,
+                        std::vector<TFrameId> fIds = std::vector<TFrameId>(),
+                        TFrameId xFrom = TFrameId(), TFrameId xTo = TFrameId(),
+                        std::wstring levelName = L"", int step = -1,
+                        int inc = -1, int frameCount = -1,
+                        bool doesFileActuallyExist = true) {
+  IoCmd::LoadResourceArguments::ResourceData actualRd(rd);
+  actualRd.m_path = scene->decodeFilePath(rd.m_path);
+
+  TFileType::Type type = TFileType::getInfo(actualRd.m_path);
+  return (type == TFileType::PALETTE_LEVEL)
+             ? loadPalette(scene, actualRd.m_path, castFolder, row0, col0)
+             : loadLevel(scene, actualRd, castFolder, row0, col0, row1, col1,
+                         expose, fIds, xFrom, xTo, levelName, step, inc,
+                         frameCount, doesFileActuallyExist);
+}
+
+//===========================================================================
+
+enum ExposeType { eOverWrite, eShiftCells, eNone };
+
+//===========================================================================
+// class ExposeLevelUndo
+//---------------------------------------------------------------------------
+
+class ExposeLevelUndo final : public TUndo {
+  TXshSimpleLevelP m_sl;
+  std::vector<TXshCell> m_oldCells;
+  std::vector<TFrameId> m_fids;
+  QMap<int, QList<std::pair<int, int>>> m_loops;
+  QMap<int, QMap<int, int>> m_cellMarks;
+  int m_row;
+  int m_col;
+  int m_frameCount;
+  bool m_insertEmptyColumn;
+  ExposeType m_type;
+
+public:
+##### N icongenerator other cases 
+      break;
+    case TZP_XSHLEVEL:
+      // Yep, we could have rasters, due to a cleanupping process
+      if (status == TXshSimpleLevel::Scanned)
+        addTask(id, new RasterImageIconRenderer(id, iconSize, sl, fid));
+      else
+        addTask(id,
+                new ToonzImageIconRenderer(id, iconSize, sl, fid, m_settings));
+      break;
+    case MESH_XSHLEVEL:
+      addTask(id, new MeshImageIconRenderer(id, iconSize, sl, fid, m_settings));
+      break;
+    default:
+      assert(false);
+      break;
+    }
+
+    case TZP_XSHLEVEL:
+      if (sl->getFrameStatus(fid) == TXshSimpleLevel::Scanned)
+        addTask(id, new RasterImageIconRenderer(id, getIconSize(), sl, fid));
+      else
+        addTask(id, new ToonzImageIconRenderer(id, getIconSize(), sl, fid,
+                                               m_settings));
+      break;
+    case MESH_XSHLEVEL:
+      addTask(id, new MeshImageIconRenderer(id, getIconSize(), sl, fid,
+                                            m_settings));
+      break;
+    default:
+      assert(false);
+      break;
+    }
+
+    if (onlyFilmStrip) return;
+      if (sl->getFrameStatus(fid) == TXshSimpleLevel::Scanned)
+        addTask(id,
+                new RasterImageIconRenderer(id, TDimension(80, 60), sl, fid));
+      else
+        addTask(id, new ToonzImageIconRenderer(id, TDimension(80, 60), sl, fid,
+                                               m_settings));
+      break;
+    case MESH_XSHLEVEL:
+      addTask(id, new MeshImageIconRenderer(id, TDimension(80, 60), sl, fid,
+                                            m_settings));
+      break;
+    default:
+      assert(false);
+      break;
+    }
+
+    m_settings = oldSettings;
+##### O default branches 
+          SLOT(onCastSelectionChanged()));
+}
+
+SelectedLevelType LevelSettingsPopup::getType(TXshLevelP level_p) {
+  if (!level_p) return None;
+  switch (level_p->getType()) {
+  case TZP_XSHLEVEL:
+    return ToonzRaster;
+  case OVL_XSHLEVEL: {
+    if (level_p->getPath().getType() == "exr")
+      return LinearRaster;
+    else
+      return NonLinearRaster;
+  }
+  case MESH_XSHLEVEL:
+    return Mesh;
+  case PLI_XSHLEVEL:
+    return ToonzVector;
+  case PLT_XSHLEVEL:
+    return Palette;
+  case CHILD_XSHLEVEL:
+    return SubXsheet;
+  case SND_XSHLEVEL:
+    return Sound;
+  default:  // Other types are not supported
+    return Others;
+  }
+}
+
+LevelSettingsValues LevelSettingsPopup::getValues(TXshLevelP level) {
+  LevelSettingsValues values;
+
+  values.name = QString::fromStdWString(level->getName());
+
+  TXshSimpleLevelP sl         = level->getSimpleLevel();
+  TXshPaletteLevelP pl        = level->getPaletteLevel();
+      sideColor = getLevelColumnBorderColor();
+      break;
+    case ZERARYFX_XSHLEVEL:
+      cellColor =
+          (isSelected) ? getSelectedFxColumnColor() : getFxColumnColor();
+      sideColor = getFxColumnBorderColor();
+      break;
+    case CHILD_XSHLEVEL:
+      cellColor =
+          (isSelected) ? getSelectedChildColumnColor() : getChildColumnColor();
+      sideColor = getChildColumnBorderColor();
+      break;
+    case SND_XSHLEVEL:
+      cellColor =
+          (isSelected) ? m_selectedSoundColumnColor : m_soundColumnColor;
+      sideColor = m_soundColumnBorderColor;
+      break;
+    case SND_TXT_XSHLEVEL:
+      cellColor = (isSelected) ? getSelectedSoundTextColumnColor()
+                               : getSoundTextColumnColor();
+      sideColor = getSoundTextColumnBorderColor();
+      break;
+    case MESH_XSHLEVEL:
+      cellColor =
+          (isSelected) ? getSelectedMeshColumnColor() : getMeshColumnColor();
+      sideColor = getMeshColumnBorderColor();
+      break;
+    case PLT_XSHLEVEL:
+      cellColor =
+          (isSelected) ? getSelectedPaletteColumnColor() : getPaletteColumnColor();
+      sideColor = getPaletteColumnBorderColor();
+      break;
+    case FOLDER_XSHLEVEL:
+      cellColor =
+          (isSelected) ? getSelectedFolderColumnColor() : getFolderColumnColor();
+      sideColor = getFolderColumnBorderColor();
+      break;
+    case UNKNOWN_XSHLEVEL:
+    case NO_XSHLEVEL:
+    default:
+      // non dovrebbe succedere
+
+//------------------------------------------------------------------
+
+SchematicViewer::~SchematicViewer() {}
+
+//------------------------------------------------------------------
+
+void SchematicViewer::getNodeColor(int ltype, QColor &nodeColor) {
+  switch (ltype) {
+  case TZI_XSHLEVEL:
+  case OVL_XSHLEVEL:
+    nodeColor = getFullcolorColumnColor();
+    break;
+  case PLI_XSHLEVEL:
+    nodeColor = getVectorColumnColor();
+    break;
+  case TZP_XSHLEVEL:
+    nodeColor = getLevelColumnColor();
+    break;
+  case ZERARYFX_XSHLEVEL:
+    nodeColor = getFxColumnColor();
+    break;
+  case CHILD_XSHLEVEL:
+    nodeColor = getChildColumnColor();
+    break;
+  case MESH_XSHLEVEL:
+    nodeColor = getMeshColumnColor();
+    break;
+  case PLT_XSHLEVEL:
+    nodeColor = getPaletteColumnColor();
+    break;
+  case eNormalFx:
+    nodeColor = getNormalFxColor();
+    break;
+  case eZeraryFx:
+    nodeColor = getFxColumnColor();

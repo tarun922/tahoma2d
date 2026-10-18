@@ -23,14 +23,16 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QDir>
+#include <QMutex>
+#include <QMutexLocker>
 #include <cstring>
 #include <map>
-#include <mutex>
 #include <cmath>
+#include <limits>
 
 namespace {
 
-std::mutex g_cacheMutex;
+QMutex g_cacheMutex;
 std::map<QString, std::shared_ptr<Ref3dModel>> g_cache;
 
 void identity4(double *m) {
@@ -96,12 +98,25 @@ const unsigned char *accessorBytes(const tinygltf::Model &model,
   const tinygltf::BufferView &bv = model.bufferViews[acc.bufferView];
   if (bv.buffer < 0 || bv.buffer >= (int)model.buffers.size()) return 0;
   const tinygltf::Buffer &buf = model.buffers[bv.buffer];
-  const size_t offset         = bv.byteOffset + acc.byteOffset;
-  if (offset >= buf.data.size()) return 0;
-  count  = acc.count;
-  stride = acc.ByteStride(bv);
-  if (stride == 0) return 0;
-  return buf.data.data() + offset;
+  if (bv.byteOffset > buf.data.size() ||
+      bv.byteLength > buf.data.size() - bv.byteOffset)
+    return 0;
+  const int componentSize = tinygltf::GetComponentSizeInBytes(acc.componentType);
+  const int componentCount = tinygltf::GetNumComponentsInType(acc.type);
+  if (componentSize <= 0 || componentCount <= 0 ||
+      acc.byteOffset > bv.byteLength)
+    return 0;
+  const size_t elementSize = size_t(componentSize) * componentCount;
+  const int byteStride = acc.ByteStride(bv);
+  if (byteStride <= 0 || size_t(byteStride) < elementSize) return 0;
+  count = acc.count;
+  stride = size_t(byteStride);
+  if (count &&
+      (count - 1 > (std::numeric_limits<size_t>::max() - elementSize) /
+                       stride ||
+       (count - 1) * stride + elementSize > bv.byteLength - acc.byteOffset))
+    return 0;
+  return buf.data.data() + bv.byteOffset + acc.byteOffset;
 }
 
 template <typename T>
@@ -112,8 +127,9 @@ T readLE(const unsigned char *p) {
 }
 
 bool readFloat3(const tinygltf::Model &model, int accessor, size_t i, float *xyz) {
-  if (accessor < 0) return false;
+  if (accessor < 0 || accessor >= (int)model.accessors.size()) return false;
   const tinygltf::Accessor &acc = model.accessors[accessor];
+  if (acc.type != TINYGLTF_TYPE_VEC3) return false;
   size_t stride = 0, count = 0;
   const unsigned char *base = accessorBytes(model, acc, stride, count);
   if (!base || i >= count) return false;
@@ -129,8 +145,9 @@ bool readFloat3(const tinygltf::Model &model, int accessor, size_t i, float *xyz
 
 bool readVec4U16(const tinygltf::Model &model, int accessor, size_t i,
                  unsigned short *out) {
-  if (accessor < 0) return false;
+  if (accessor < 0 || accessor >= (int)model.accessors.size()) return false;
   const tinygltf::Accessor &acc = model.accessors[accessor];
+  if (acc.type != TINYGLTF_TYPE_VEC4) return false;
   size_t stride = 0, count = 0;
   const unsigned char *base = accessorBytes(model, acc, stride, count);
   if (!base || i >= count) return false;
@@ -147,8 +164,9 @@ bool readVec4U16(const tinygltf::Model &model, int accessor, size_t i,
 }
 
 bool readVec4F(const tinygltf::Model &model, int accessor, size_t i, float *out) {
-  if (accessor < 0) return false;
+  if (accessor < 0 || accessor >= (int)model.accessors.size()) return false;
   const tinygltf::Accessor &acc = model.accessors[accessor];
+  if (acc.type != TINYGLTF_TYPE_VEC4) return false;
   size_t stride = 0, count = 0;
   const unsigned char *base = accessorBytes(model, acc, stride, count);
   if (!base || i >= count) return false;
@@ -162,6 +180,7 @@ bool readVec4F(const tinygltf::Model &model, int accessor, size_t i, float *out)
 
 bool readIndex(const tinygltf::Model &model, const tinygltf::Accessor &acc,
                size_t i, unsigned int &out) {
+  if (acc.type != TINYGLTF_TYPE_SCALAR) return false;
   size_t stride = 0, count = 0;
   const unsigned char *base = accessorBytes(model, acc, stride, count);
   if (!base || i >= count) return false;
@@ -195,7 +214,11 @@ void appendPrimitive(const tinygltf::Model &model,
   auto itW = prim.attributes.find("WEIGHTS_0");
   if (itW != prim.attributes.end()) wgtAcc = itW->second;
 
-  const unsigned int base = (unsigned int)verts.size();
+  const size_t maxVertexCount = std::numeric_limits<unsigned int>::max();
+  if (verts.size() > maxVertexCount ||
+      n > maxVertexCount - verts.size())
+    return;
+  const unsigned int base = static_cast<unsigned int>(verts.size());
   verts.reserve(verts.size() + n);
   for (size_t i = 0; i < n; ++i) {
     Ref3dModel::Vertex v;
@@ -224,7 +247,11 @@ void appendPrimitive(const tinygltf::Model &model,
     primIdx.resize(acc.count);
     for (size_t i = 0; i < acc.count; ++i) {
       unsigned int id = 0;
-      if (!readIndex(model, acc, i, id)) id = 0;
+      if (!readIndex(model, acc, i, id) || id >= n) {
+        TSysLog::warning("Ref3dModel: skipped primitive with an invalid index");
+        verts.resize(base);
+        return;
+      }
       primIdx[i] = base + id;
     }
   } else {
@@ -287,6 +314,7 @@ bool Ref3dModel::load(const TFilePath &fp, std::string *err) {
   m_joints.clear();
   m_vertices.clear();
   m_indices.clear();
+  memset(&m_bounds, 0, sizeof(m_bounds));
 
   const QString qpath = fp.getQString();
   QFile file(qpath);
@@ -377,6 +405,35 @@ bool Ref3dModel::load(const TFilePath &fp, std::string *err) {
     for (const tinygltf::Primitive &prim : mesh.primitives)
       appendPrimitive(model, prim, m_vertices, m_indices);
 
+  if (m_indices.empty()) {
+    if (err) *err = "No supported triangle mesh found in the Ref3D model.";
+    TSysLog::warning("Ref3dModel: no supported triangle mesh found");
+    return false;
+  }
+
+  for (int axis = 0; axis < 3; ++axis)
+    m_bounds.min[axis] = m_bounds.max[axis] = 0.0f;
+  if (!m_vertices.empty()) {
+    const Vertex &first = m_vertices.front();
+    m_bounds.min[0] = m_bounds.max[0] = first.px;
+    m_bounds.min[1] = m_bounds.max[1] = first.py;
+    m_bounds.min[2] = m_bounds.max[2] = first.pz;
+    for (const Vertex &vertex : m_vertices) {
+      if (vertex.px < m_bounds.min[0]) m_bounds.min[0] = vertex.px;
+      if (vertex.py < m_bounds.min[1]) m_bounds.min[1] = vertex.py;
+      if (vertex.pz < m_bounds.min[2]) m_bounds.min[2] = vertex.pz;
+      if (vertex.px > m_bounds.max[0]) m_bounds.max[0] = vertex.px;
+      if (vertex.py > m_bounds.max[1]) m_bounds.max[1] = vertex.py;
+      if (vertex.pz > m_bounds.max[2]) m_bounds.max[2] = vertex.pz;
+    }
+  }
+
+  if (triangleCount() > 50000)
+    TSysLog::warning("Ref3dModel: model has " +
+                     std::to_string(triangleCount()) +
+                     " triangles (over the 50,000 triangle performance "
+                     "guideline); loading continues");
+
   {
     std::string msg = "Ref3dModel: " + qpath.toStdString() + " skins=" +
                       std::to_string(m_skinCount) + " joints=" +
@@ -392,19 +449,19 @@ std::shared_ptr<Ref3dModel> Ref3dModel::loadCached(const TFilePath &fp,
                                                    std::string *err) {
   const QString key = QFileInfo(fp.getQString()).absoluteFilePath();
   {
-    std::lock_guard<std::mutex> lock(g_cacheMutex);
+    QMutexLocker lock(&g_cacheMutex);
     auto it = g_cache.find(key);
     if (it != g_cache.end()) return it->second;
   }
   auto model = std::make_shared<Ref3dModel>();
   if (!model->load(fp, err)) return std::shared_ptr<Ref3dModel>();
-  std::lock_guard<std::mutex> lock(g_cacheMutex);
+  QMutexLocker lock(&g_cacheMutex);
   g_cache[key] = model;
   return model;
 }
 
 void Ref3dModel::dropCached(const TFilePath &fp) {
   const QString key = QFileInfo(fp.getQString()).absoluteFilePath();
-  std::lock_guard<std::mutex> lock(g_cacheMutex);
+  QMutexLocker lock(&g_cacheMutex);
   g_cache.erase(key);
 }

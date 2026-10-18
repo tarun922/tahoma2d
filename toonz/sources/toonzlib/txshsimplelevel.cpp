@@ -17,6 +17,7 @@
 #include "toonz/tcamera.h"
 #include "toonz/txshcell.h"
 #include "toonz/txsheet.h"
+#include "toonz/ref3dmodel.h"
 
 // TnzBase includes
 #include "tenv.h"
@@ -569,6 +570,7 @@ TFrameId TXshSimpleLevel::index2fid(int index) const {
 TImageP TXshSimpleLevel::getFrame(const TFrameId &fid, UCHAR imFlags,
                                   int subsampling) const {
   assert(m_type != UNKNOWN_XSHLEVEL);
+  if (m_type == REF3D_XSHLEVEL) return TImageP();
 
   // If the required frame is not in range, quit
   if (m_frames.count(fid) == 0) return TImageP();
@@ -592,6 +594,7 @@ TImageP TXshSimpleLevel::getFrame(const TFrameId &fid, UCHAR imFlags,
 TImageInfo *TXshSimpleLevel::getFrameInfo(const TFrameId &fid,
                                           bool toBeModified) {
   assert(m_type != UNKNOWN_XSHLEVEL);
+  if (m_type == REF3D_XSHLEVEL) return 0;
 
   // If the required frame is not in range, quit
   if (m_frames.count(fid) == 0) return 0;
@@ -608,6 +611,7 @@ TImageInfo *TXshSimpleLevel::getFrameInfo(const TFrameId &fid,
 
 TImageP TXshSimpleLevel::getFrameIcon(const TFrameId &fid) const {
   assert(m_type != UNKNOWN_XSHLEVEL);
+  if (m_type == REF3D_XSHLEVEL) return TImageP();
 
   if (m_frames.count(fid) == 0) return TImageP();
 
@@ -1080,6 +1084,8 @@ void TXshSimpleLevel::loadData(TIStream &is) {
       type = TZI_XSHLEVEL;
     else if (ext == "mesh")
       type = MESH_XSHLEVEL;
+    else if (Ref3dModel::isRef3dExtension(ext))
+      type = REF3D_XSHLEVEL;
     else
       type = OVL_XSHLEVEL;
   }
@@ -1105,6 +1111,25 @@ public:
   }
 
 } loadingLevelRange;
+
+void loadRef3dLevel(TXshSimpleLevel *sl, const TFilePath &path,
+                    const std::vector<TFrameId> &fIds) {
+  std::string error;
+  if (!Ref3dModel::loadCached(path, &error)) {
+    if (error.empty()) error = "Failed to load the 3D reference model.";
+    throw TSystemException(path, error);
+  }
+
+  if (fIds.empty()) {
+    const TFrameId fid(1);
+    if (loadingLevelRange.match(fid)) sl->setFrame(fid, TImageP());
+  } else {
+    for (const TFrameId &fid : fIds)
+      if (loadingLevelRange.match(fid)) sl->setFrame(fid, TImageP());
+  }
+  sl->setRenumberTable();
+  sl->getProperties()->setDirtyFlag(false);
+}
 
 //-----------------------------------------------------------------------------
 }  // namespace
@@ -1177,6 +1202,13 @@ void TXshSimpleLevel::load() {
 
   TFilePath checkpath = getScene()->decodeFilePath(m_path);
   std::string type    = checkpath.getType();
+
+  if (getType() == REF3D_XSHLEVEL) {
+    loadRef3dLevel(this, checkpath, std::vector<TFrameId>());
+    loadingLevelRange.reset();
+    updateReadOnly();
+    return;
+  }
 
   if (m_scannedPath != TFilePath()) {
     getProperties()->setDirtyFlag(
@@ -1397,6 +1429,13 @@ void TXshSimpleLevel::load(const std::vector<TFrameId> &fIds) {
   // non e' un livello scan+cleanup
   TFilePath path = getScene()->decodeFilePath(m_path);
 
+  if (getType() == REF3D_XSHLEVEL) {
+    loadRef3dLevel(this, path, fIds);
+    loadingLevelRange.reset();
+    updateReadOnly();
+    return;
+  }
+
   TLevelReaderP lr(path);
   assert(lr);
 
@@ -1545,6 +1584,14 @@ void TXshSimpleLevel::saveData(TOStream &os) {
 
 void TXshSimpleLevel::save() {
   assert(getScene());
+  if (getType() == REF3D_XSHLEVEL) {
+    if (getProperties()->getDirtyFlag())
+      throw TSystemException(
+          getScene()->decodeFilePath(m_path),
+          "3D reference level data cannot be saved in this phase.");
+    return;
+  }
+
   TFilePath path = getScene()->decodeFilePath(m_path);
   TSystem::outputDebug("save() : " + ::to_string(m_path) + " = " +
                        ::to_string(path) + "\n");
@@ -1613,6 +1660,14 @@ void TXshSimpleLevel::save(const TFilePath &fp, const TFilePath &oldFp,
       (!oldFp.isEmpty()) ? oldFp : getScene()->decodeFilePath(m_path);
 
   TFilePath dDstPath = getScene()->decodeFilePath(fp);
+  if (getType() == REF3D_XSHLEVEL) {
+    if (dOldPath != dDstPath || getProperties()->getDirtyFlag())
+      throw TSystemException(
+          dDstPath,
+          "3D reference level data cannot be saved to this path in this phase.");
+    return;
+  }
+
   if (!TSystem::touchParentDir(dDstPath))
     throw TSystemException(
         dDstPath,
@@ -2126,6 +2181,8 @@ void TXshSimpleLevel::initializeResolutionAndDpi(const TDimension &dim,
 
 // crea un frame con tipo, dimensioni, dpi, ecc. compatibili con il livello
 TImageP TXshSimpleLevel::createEmptyFrame() {
+  if (m_type == REF3D_XSHLEVEL) return TImageP();
+
   // In case this is the first frame to be created in this level (i.e. the level
   // file was missing when loading resources) initialize the level in the same
   // manner as createNewLevel() in order to avoid crash. This can be happened if
@@ -2523,6 +2580,8 @@ TRectD TXshSimpleLevel::getBBox(const TFrameId &fid) const {
 
   // Get the frame bbox in image coordinates
   switch (getType()) {
+  case REF3D_XSHLEVEL:
+    return TRectD();
   case PLI_XSHLEVEL:
   case MESH_XSHLEVEL: {
     // Load the image and extract its bbox forcibly

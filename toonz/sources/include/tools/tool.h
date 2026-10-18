@@ -296,8 +296,8 @@ public:
 
     LevelColumns = 0x20,  //!< Will work on level columns
     MeshColumns  = 0x40,  //!< Will work on mesh columns
-
     EmptyTarget = 0x80,  //!< Will work on empty cells/columns
+    Ref3dImage = 0x100,  //!< Will work on Ref3D reference levels
 
     CommonImages = VectorImage | ToonzImage | RasterImage,
     AllImages    = CommonImages | MeshImage,

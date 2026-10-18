@@ -1068,6 +1068,9 @@ static LevelType getLevelType(const TFilePath &fp) {
   case TFileType::MESH_LEVEL:
     ret.m_ltype = MESH_XSHLEVEL;
     break;
+  case TFileType::GLTF_LEVEL:
+    ret.m_ltype = REF3D_XSHLEVEL;
+    break;
   default:
     break;
   }
@@ -1230,6 +1233,11 @@ TXshLevel *ToonzScene::loadLevel(const TFilePath &actualPath,
       throw TException(msg);
     } catch (...) {
       throw;
+    }
+
+    if (xl->getType() == REF3D_XSHLEVEL) {
+      m_levelSet->insertLevel(xl);
+      return xl;
     }
 
     if (ltype.m_oldLevelFlag)

@@ -169,6 +169,7 @@ set(HEADERS
     ../include/toonz/navigationtags.h
     ../include/toonz/txshfoldercolumn.h
     ../include/toonz/ref3dmodel.h
+    ../include/toonz/ref3ddrawer.h
 )
 
 set(SOURCES
@@ -214,6 +215,7 @@ set(SOURCES
     preferences.cpp
     rasterbrush.cpp
     ref3dmodel.cpp
+    ref3ddrawer.cpp
     rasterstrokegenerator.cpp
     scenefx.cpp
     sceneproperties.cpp

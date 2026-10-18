@@ -56,6 +56,7 @@
 #include "toonz/txshsoundlevel.h"
 #include "toonz/txshpalettecolumn.h"
 #include "toonz/txshpalettelevel.h"
+#include "toonz/txshcolumn.h"
 #include "toonz/txshleveltypes.h"
 #include "toonz/txshsoundtextcolumn.h"
 #include "toonz/tstageobjecttree.h"
@@ -1049,6 +1050,14 @@ TXshLevel *loadLevel(ToonzScene *scene,
 
       scene->getXsheet()->exposeLevel(row0, col0, xl, fIds, xFrom, xTo, step,
                                       inc, frameCount, doesFileActuallyExist);
+
+      if (levelType == REF3D_XSHLEVEL) {
+        TXshColumn *column = xsh->getColumn(col0);
+        if (column) {
+          column->setPreviewVisible(false);
+          column->setCamstandVisible(true);
+        }
+      }
 
       if (frameCount > 0)
         undo->setCells(scene->getXsheet(), row0, col0, frameCount);
